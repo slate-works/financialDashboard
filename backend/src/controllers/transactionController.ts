@@ -5,6 +5,7 @@ import {
   getTransactions,
   getMonthlySummary,
   getCategorySummary,
+  deleteAllTransactions as deleteAllTransactionsService,
 } from "../services/transactionService.js"
 
 /**
@@ -96,5 +97,24 @@ export async function getCategorySummaryData(req: Request, res: Response): Promi
   } catch (error) {
     console.error("Error fetching category summary:", error)
     res.status(500).json({ error: "Failed to fetch category summary" })
+  }
+}
+
+/**
+ * DELETE /api/transactions
+ * Delete all transactions
+ */
+export async function deleteAllTransactions(req: Request, res: Response): Promise<void> {
+  try {
+    const count = await deleteAllTransactionsService()
+
+    res.json({
+      success: true,
+      message: `Deleted ${count} transactions`,
+      count,
+    })
+  } catch (error) {
+    console.error("Error deleting transactions:", error)
+    res.status(500).json({ error: "Failed to delete transactions" })
   }
 }

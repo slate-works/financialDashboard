@@ -171,3 +171,11 @@ export async function getCategorySummary(): Promise<CategorySummary[]> {
 
   return Array.from(categoryMap.values()).sort((a, b) => b.amount - a.amount)
 }
+
+/**
+ * Delete all transactions from the database
+ */
+export async function deleteAllTransactions(): Promise<number> {
+  const result = await prisma.transaction.deleteMany()
+  return result.count
+}

@@ -62,17 +62,33 @@ export default function FinanceDashboard() {
       }
 
       const data = await response.json()
-      
-      // Fetch all transactions after upload
-      const transactionsResponse = await fetch('http://localhost:3001/api/transactions')
-      const transactionsData = await transactionsResponse.json()
-      
-      setTransactions(transactionsData.transactions)
-      setFilteredTransactions(transactionsData.transactions)
+      if (data.success) {
+        // Reload transactions after successful upload
+        loadTransactions()
+      }
     } catch (error) {
       console.error('Error uploading file:', error)
-      alert('Failed to upload file. Make sure the backend is running.')
+      alert('Error uploading file. Please try again.')
     }
+  }
+
+  const loadTransactions = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/transactions')
+      const data = await response.json()
+      
+      if (data.success && data.transactions) {
+        setTransactions(data.transactions)
+        setFilteredTransactions(data.transactions)
+      }
+    } catch (error) {
+      console.error('Error loading transactions:', error)
+    }
+  }
+
+  const handleDataCleared = () => {
+    setTransactions([])
+    setFilteredTransactions([])
   }
 
   const handleFilterChange = (filters: {
@@ -117,7 +133,7 @@ export default function FinanceDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader monthsLoaded={monthsLoaded} />
+      <DashboardHeader monthsLoaded={monthsLoaded} onDataCleared={handleDataCleared} />
 
       <main className="container mx-auto px-4 py-8 space-y-8">
         <div className="flex items-center justify-between">

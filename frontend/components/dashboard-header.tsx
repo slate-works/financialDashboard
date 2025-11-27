@@ -1,11 +1,13 @@
 import { Wallet, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { SettingsDialog } from "@/components/settings-dialog"
 
 interface DashboardHeaderProps {
   monthsLoaded?: number
+  onDataCleared?: () => void
 }
 
-export function DashboardHeader({ monthsLoaded = 3 }: DashboardHeaderProps) {
+export function DashboardHeader({ monthsLoaded = 3, onDataCleared }: DashboardHeaderProps) {
   return (
     <header className="border-b border-border bg-card sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
@@ -20,12 +22,15 @@ export function DashboardHeader({ monthsLoaded = 3 }: DashboardHeaderProps) {
             </div>
           </div>
 
-          {monthsLoaded > 0 && (
-            <Badge variant="secondary" className="gap-1.5">
-              <Calendar className="w-3.5 h-3.5" />
-              {monthsLoaded} {monthsLoaded === 1 ? "month" : "months"} loaded
-            </Badge>
-          )}
+          <div className="flex items-center gap-3">
+            {monthsLoaded > 0 && (
+              <Badge variant="secondary" className="gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                {monthsLoaded} {monthsLoaded === 1 ? "month" : "months"} loaded
+              </Badge>
+            )}
+            <SettingsDialog onDataCleared={onDataCleared} />
+          </div>
         </div>
       </div>
     </header>

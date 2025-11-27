@@ -4,6 +4,7 @@ import {
   listTransactions,
   getMonthlySummaryData,
   getCategorySummaryData,
+  deleteAllTransactions,
 } from "../controllers/transactionController.js"
 import multer from "multer"
 
@@ -17,6 +18,9 @@ router.post("/upload", upload.single("file"), uploadTransactions)
 
 // GET /api/transactions - List transactions with optional filters
 router.get("/", listTransactions)
+
+// DELETE /api/transactions - Delete all transactions
+router.delete("/", deleteAllTransactions)
 
 // GET /api/transactions/summary/monthly - Get monthly summary
 router.get("/summary/monthly", getMonthlySummaryData)

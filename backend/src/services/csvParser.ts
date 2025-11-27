@@ -33,15 +33,29 @@ function cleanCategory(raw: string | null | undefined): string {
 }
 
 /**
+ * Clean special characters and fix encoding issues
+ */
+function cleanText(text: string): string {
+  // Replace common encoding issues
+  return text
+    .replace(/â€™/g, "'")  // Fix apostrophe encoding
+    .replace(/â€œ/g, '"')  // Fix opening quote
+    .replace(/â€/g, '"')   // Fix closing quote
+    .replace(/â€"/g, '-')  // Fix em dash
+    .replace(/â€"/g, '-')  // Fix en dash
+    .trim()
+}
+
+/**
  * Build description from Note or Description columns, fallback to category
  */
 function buildDescription(note: any, description: any, category: string): string {
   // Try Note first
-  const noteStr = typeof note === "string" ? note.trim() : ""
+  const noteStr = typeof note === "string" ? cleanText(note) : ""
   if (noteStr.length > 0) return noteStr
   
   // Try Description field
-  const descStr = typeof description === "string" ? description.trim() : ""
+  const descStr = typeof description === "string" ? cleanText(description) : ""
   if (descStr.length > 0) return descStr
   
   // Fallback to category
@@ -108,8 +122,8 @@ export async function parseCSVFile(filePath: string): Promise<ParsedTransaction[
     const worksheet = workbook.Sheets[sheetName]
     records = XLSX.utils.sheet_to_json(worksheet)
   } else {
-    // Parse CSV file with latin1 encoding
-    const fileContent = fs.readFileSync(filePath, "latin1")
+    // Parse CSV file with utf-8 encoding
+    const fileContent = fs.readFileSync(filePath, "utf-8")
     records = parse(fileContent, {
       columns: true,
       skip_empty_lines: true,

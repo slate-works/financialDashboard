@@ -1,8 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import type { Transaction } from "@/types/transaction"
 import { ArrowDownRight, ArrowUpRight } from "lucide-react"
 
@@ -10,13 +12,24 @@ interface TransactionsTableProps {
   transactions: Transaction[]
 }
 
+const INITIAL_DISPLAY_COUNT = 10
+
 export function TransactionsTable({ transactions }: TransactionsTableProps) {
+  const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT)
+  
+  const displayedTransactions = transactions.slice(0, displayCount)
+  const hasMore = transactions.length > displayCount
+  
+  const handleShowMore = () => {
+    setDisplayCount(prev => Math.min(prev + 10, transactions.length))
+  }
+  
   return (
     <Card className="transition-all hover:shadow-md">
       <CardHeader>
         <CardTitle>Recent Transactions</CardTitle>
         <CardDescription>
-          Showing {transactions.length} transaction{transactions.length !== 1 ? "s" : ""}
+          Showing {displayedTransactions.length} of {transactions.length} transaction{transactions.length !== 1 ? "s" : ""}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -39,7 +52,7 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                transactions.map((transaction) => (
+                displayedTransactions.map((transaction) => (
                   <TableRow key={transaction.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="font-mono text-sm">
                       {new Date(transaction.date).toLocaleDateString("en-US", {
@@ -84,6 +97,17 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
             </TableBody>
           </Table>
         </div>
+        {hasMore && (
+          <div className="mt-4 flex justify-center">
+            <Button 
+              onClick={handleShowMore}
+              variant="outline"
+              size="sm"
+            >
+              Show More ({transactions.length - displayCount} remaining)
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
