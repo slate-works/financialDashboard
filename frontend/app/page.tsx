@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardStats } from "@/components/dashboard-stats"
 import { DashboardCharts } from "@/components/dashboard-charts"
@@ -11,8 +11,30 @@ import type { Transaction } from "@/types/transaction"
 import { generateMockTransactions } from "@/lib/mock-data"
 
 export default function FinanceDashboard() {
-  const [transactions, setTransactions] = useState<Transaction[]>(generateMockTransactions())
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>(transactions)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load transactions from backend on mount
+  useEffect(() => {
+    const loadTransactions = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/transactions')
+        const data = await response.json()
+        
+        if (data.success && data.transactions) {
+          setTransactions(data.transactions)
+          setFilteredTransactions(data.transactions)
+        }
+      } catch (error) {
+        console.error('Error loading transactions:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadTransactions()
+  }, [])
 
   const monthsLoaded = useMemo(() => {
     const uniqueMonths = new Set(
@@ -24,16 +46,33 @@ export default function FinanceDashboard() {
     return uniqueMonths.size
   }, [transactions])
 
-  const handleFileUpload = (file: File) => {
-    // Parse CSV file and update transactions
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      const newTransactions = parseCSV(text)
-      setTransactions(newTransactions)
-      setFilteredTransactions(newTransactions)
+  const handleFileUpload = async (file: File) => {
+    try {
+      // Upload file to backend API
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('http://localhost:3001/api/transactions/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await response.json()
+      
+      // Fetch all transactions after upload
+      const transactionsResponse = await fetch('http://localhost:3001/api/transactions')
+      const transactionsData = await transactionsResponse.json()
+      
+      setTransactions(transactionsData.transactions)
+      setFilteredTransactions(transactionsData.transactions)
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      alert('Failed to upload file. Make sure the backend is running.')
     }
-    reader.readAsText(file)
   }
 
   const handleFilterChange = (filters: {

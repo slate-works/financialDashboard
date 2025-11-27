@@ -1,0 +1,17 @@
+{
+  "goals": [
+    "Always follow PROJECT_GUIDE.md when generating code",
+    "Use TypeScript for all backend and frontend code",
+    "Use Express and Prisma on the backend",
+    "Use React + Vite + Tailwind on the frontend",
+    "Keep backend structure: routes → controllers → services → db",
+    "Use the unified Transaction schema described in PROJECT_GUIDE.md",
+    "Write clean, modular, and typed code",
+    "When in doubt, match the existing conventions in the project structure"
+  ],
+  "style": {
+    "code_writing": "modular, typed, documented",
+    "naming": "clear and descriptive",
+    "comments": "helpful but not excessive"
+  }
+}

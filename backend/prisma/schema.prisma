@@ -2,11 +2,23 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  description String
+  category    String
+  amount      Float
+  type        String
+  account     String?
+  note        String?
+  createdAt   DateTime @default(now())
 }
