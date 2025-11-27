@@ -16,7 +16,10 @@ export interface ParsedTransaction {
  * Parse date from MM/DD/YYYY format to Date object
  */
 function parsePeriodToDate(period: string): Date {
-  const [month, day, year] = period.split("/").map(Number)
+  const parts = period.split("/").map(Number)
+  const month = parts[0] || 1
+  const day = parts[1] || 1
+  const year = parts[2] || new Date().getFullYear()
   return new Date(year, month - 1, day)
 }
 
@@ -119,6 +122,9 @@ export async function parseCSVFile(filePath: string): Promise<ParsedTransaction[
     // Parse Excel file
     const workbook = XLSX.readFile(filePath)
     const sheetName = workbook.SheetNames[0]
+    if (!sheetName) {
+      throw new Error("No sheets found in Excel file")
+    }
     const worksheet = workbook.Sheets[sheetName]
     records = XLSX.utils.sheet_to_json(worksheet)
   } else {

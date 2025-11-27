@@ -43,12 +43,22 @@ export async function uploadTransactions(req: Request, res: Response): Promise<v
  */
 export async function listTransactions(req: Request, res: Response): Promise<void> {
   try {
-    const filters = {
-      categories: req.query.categories ? (req.query.categories as string).split(",") : undefined,
-      dateFrom: req.query.dateFrom as string | undefined,
-      dateTo: req.query.dateTo as string | undefined,
-      searchText: req.query.searchText as string | undefined,
-      type: req.query.type as "income" | "expense" | "transfer" | undefined,
+    const filters: TransactionFilters = {}
+    
+    if (req.query.categories) {
+      filters.categories = (req.query.categories as string).split(",")
+    }
+    if (req.query.dateFrom) {
+      filters.dateFrom = req.query.dateFrom as string
+    }
+    if (req.query.dateTo) {
+      filters.dateTo = req.query.dateTo as string
+    }
+    if (req.query.searchText) {
+      filters.searchText = req.query.searchText as string
+    }
+    if (req.query.type) {
+      filters.type = req.query.type as "income" | "expense" | "transfer"
     }
 
     const transactions = await getTransactions(filters)

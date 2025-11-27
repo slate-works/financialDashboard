@@ -15,24 +15,25 @@ export default function FinanceDashboard() {
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
+  // Load transactions function
+  const loadTransactions = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/transactions')
+      const data = await response.json()
+      
+      if (data.success && data.transactions) {
+        setTransactions(data.transactions)
+        setFilteredTransactions(data.transactions)
+      }
+    } catch (error) {
+      console.error('Error loading transactions:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Load transactions from backend on mount
   useEffect(() => {
-    const loadTransactions = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/transactions')
-        const data = await response.json()
-        
-        if (data.success && data.transactions) {
-          setTransactions(data.transactions)
-          setFilteredTransactions(data.transactions)
-        }
-      } catch (error) {
-        console.error('Error loading transactions:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     loadTransactions()
   }, [])
 
@@ -64,25 +65,11 @@ export default function FinanceDashboard() {
       const data = await response.json()
       if (data.success) {
         // Reload transactions after successful upload
-        loadTransactions()
+        await loadTransactions()
       }
     } catch (error) {
       console.error('Error uploading file:', error)
       alert('Error uploading file. Please try again.')
-    }
-  }
-
-  const loadTransactions = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/transactions')
-      const data = await response.json()
-      
-      if (data.success && data.transactions) {
-        setTransactions(data.transactions)
-        setFilteredTransactions(data.transactions)
-      }
-    } catch (error) {
-      console.error('Error loading transactions:', error)
     }
   }
 
