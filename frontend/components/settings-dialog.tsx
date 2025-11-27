@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { API_URL } from "@/lib/config"
 import { Separator } from "@/components/ui/separator"
 import {
   AlertDialog,
@@ -41,7 +42,7 @@ export function SettingsDialog({ onDataCleared }: SettingsDialogProps) {
   const handleClearDatabase = async () => {
     setIsClearing(true)
     try {
-      const response = await fetch("http://localhost:3001/api/transactions", {
+      const response = await fetch(`${API_URL}/api/transactions`, {
         method: "DELETE",
       })
 
@@ -69,7 +70,7 @@ export function SettingsDialog({ onDataCleared }: SettingsDialogProps) {
 
   const handleExportData = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/transactions")
+      const response = await fetch(`${API_URL}/api/transactions`)
       const data = await response.json()
 
       if (data.success && data.transactions) {
