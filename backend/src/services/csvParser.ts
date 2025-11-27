@@ -126,6 +126,9 @@ export async function parseCSVFile(filePath: string): Promise<ParsedTransaction[
       throw new Error("No sheets found in Excel file")
     }
     const worksheet = workbook.Sheets[sheetName]
+    if (!worksheet) {
+      throw new Error(`Worksheet ${sheetName} not found`)
+    }
     records = XLSX.utils.sheet_to_json(worksheet)
   } else {
     // Parse CSV file with utf-8 encoding

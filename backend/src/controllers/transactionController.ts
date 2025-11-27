@@ -1,5 +1,6 @@
 import type { Request, Response } from "express"
 import { parseCSVFile } from "../services/csvParser.js"
+import type { TransactionFilters } from "../services/transactionService.js"
 import {
   createManyTransactions,
   getTransactions,

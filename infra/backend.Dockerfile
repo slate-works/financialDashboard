@@ -10,6 +10,9 @@ RUN npm install
 # Copy source
 COPY backend/ ./
 
+# Generate Prisma client (must be done before build)
+RUN npx prisma generate
+
 # Build TypeScript
 RUN npm run build
 
