@@ -11,6 +11,8 @@ RUN npm install
 COPY backend/ ./
 
 # Generate Prisma client (must be done before build)
+# Set a dummy DATABASE_URL for generation (not used at build time)
+ENV DATABASE_URL="file:./dev.db"
 RUN npx prisma generate
 
 # Build TypeScript
