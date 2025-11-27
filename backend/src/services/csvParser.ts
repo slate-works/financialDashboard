@@ -1,4 +1,5 @@
 import { parse } from "csv-parse/sync"
+import * as XLSX from "xlsx"
 import fs from "fs"
 
 export interface ParsedTransaction {
@@ -32,11 +33,18 @@ function cleanCategory(raw: string | null | undefined): string {
 }
 
 /**
- * Build description from Note column, fallback to category
+ * Build description from Note or Description columns, fallback to category
  */
-function buildDescription(note: any, category: string): string {
-  const n = typeof note === "string" ? note.trim() : ""
-  if (n.length > 0) return n
+function buildDescription(note: any, description: any, category: string): string {
+  // Try Note first
+  const noteStr = typeof note === "string" ? note.trim() : ""
+  if (noteStr.length > 0) return noteStr
+  
+  // Try Description field
+  const descStr = typeof description === "string" ? description.trim() : ""
+  if (descStr.length > 0) return descStr
+  
+  // Fallback to category
   if (category.length > 0) return category
   return "Unknown"
 }
@@ -71,7 +79,7 @@ export function mapCsvRowToTransaction(row: any): ParsedTransaction {
   const account = row.Accounts ? String(row.Accounts).trim() : "Unknown"
   const category = cleanCategory(row.Category as string | undefined)
   const { type, amount } = parseTypeAndAmount(row["Income/Expense"], row.USD)
-  const description = buildDescription(row.Note, category)
+  const description = buildDescription(row.Note, row.Description, category)
 
   return {
     date,
@@ -85,26 +93,42 @@ export function mapCsvRowToTransaction(row: any): ParsedTransaction {
 }
 
 /**
- * Parse CSV file from Money Manager export and convert to transaction objects
- * 
- * Expected CSV format:
- * Period, Accounts, Category, Subcategory, Note, USD, Income/Expense, Description, Amount, Currency, Accounts.1
+ * Parse CSV or Excel file from Money Manager export
  */
 export async function parseCSVFile(filePath: string): Promise<ParsedTransaction[]> {
-  // Read file with latin1 encoding to handle non-UTF8 characters
-  const fileContent = fs.readFileSync(filePath, "latin1")
-  
-  const records = parse(fileContent, {
-    columns: true,
-    skip_empty_lines: true,
-    trim: true,
-  })
+  let records: any[]
+
+  // Check file extension
+  const isExcel = filePath.endsWith('.xlsx') || filePath.endsWith('.xls')
+
+  if (isExcel) {
+    // Parse Excel file
+    const workbook = XLSX.readFile(filePath)
+    const sheetName = workbook.SheetNames[0]
+    const worksheet = workbook.Sheets[sheetName]
+    records = XLSX.utils.sheet_to_json(worksheet)
+  } else {
+    // Parse CSV file with latin1 encoding
+    const fileContent = fs.readFileSync(filePath, "latin1")
+    records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    })
+  }
 
   const transactions: ParsedTransaction[] = []
 
   for (const record of records) {
     // Skip if missing essential data
     if (!record.Period || !record.USD) {
+      continue
+    }
+
+    // Skip "Modified Balance" entries (initial balance markers)
+    const category = cleanCategory(record.Category as string | undefined)
+    if (category.toLowerCase().includes("modified") || category.toLowerCase().includes("balance")) {
+      console.log('Skipping initial balance entry:', record.Period, category)
       continue
     }
 
@@ -127,7 +151,7 @@ export async function parseCSVFile(filePath: string): Promise<ParsedTransaction[
       
       transactions.push(transaction)
     } catch (error) {
-      console.error("Error parsing CSV row:", error, record)
+      console.error("Error parsing row:", error, record)
       // Continue processing other rows
     }
   }
