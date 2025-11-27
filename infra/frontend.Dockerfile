@@ -3,17 +3,26 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY frontend/package*.json ./
-RUN npm install
+COPY frontend/pnpm-lock.yaml ./
+RUN npm install -g pnpm
+RUN pnpm install
 
 COPY frontend/ ./
 
-RUN npm run build
+RUN pnpm run build
 
-# Production server - nginx
-FROM nginx:alpine
+# Production server with Node.js (Next.js standalone)
+FROM node:20-alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-EXPOSE 80
+ENV NODE_ENV=production
 
-CMD ["nginx", "-g", "daemon off;"]
+# Copy standalone output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
