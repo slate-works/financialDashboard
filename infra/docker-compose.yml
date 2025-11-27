@@ -8,13 +8,14 @@ services:
     container_name: finance-backend
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5000:3001"
     volumes:
       # persist the DB on your home server
       - backend_data:/app/prisma
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/prisma/dev.db
+      - PORT=3001
 
   frontend:
     build:

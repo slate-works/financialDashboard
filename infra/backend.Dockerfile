@@ -37,6 +37,6 @@ COPY backend/prisma ./prisma
 RUN npx prisma generate
 
 # Expose port
-EXPOSE 5000
+EXPOSE 3001
 
 CMD ["node", "dist/index.js"]
