@@ -442,39 +442,41 @@ export function DashboardCharts({ transactions }: DashboardChartsProps) {
       {/* Daily Spending Heatmap */}
       <Card className="lg:col-span-2 transition-all hover:shadow-md">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Daily Activity Calendar</CardTitle>
-              <CardDescription>
-                <span className="inline-flex items-center gap-4 mt-2">
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-sm bg-emerald-500"></span>
-                    High Income (&gt;$100)
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-sm bg-red-500"></span>
-                    High Expense (&gt;$100)
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-sm bg-gray-500"></span>
-                    Low Activity
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-sm bg-gray-900"></span>
-                    No Activity
-                  </span>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Daily Activity Calendar</CardTitle>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={goToPreviousMonth} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-sm font-semibold min-w-[120px] text-center">{monthYearDisplay}</div>
+                <Button variant="outline" size="icon" onClick={goToNextMonth} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <CardDescription>
+              <span className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-emerald-500"></span>
+                  <span className="whitespace-nowrap">High Income (&gt;$100)</span>
                 </span>
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="text-sm font-semibold min-w-[150px] text-center">{monthYearDisplay}</div>
-              <Button variant="outline" size="icon" onClick={goToNextMonth}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-red-500"></span>
+                  <span className="whitespace-nowrap">High Expense (&gt;$100)</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-gray-500"></span>
+                  <span className="whitespace-nowrap">Low Activity</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-gray-900"></span>
+                  <span className="whitespace-nowrap">No Activity</span>
+                </span>
+              </span>
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>

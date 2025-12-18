@@ -9,7 +9,7 @@ import { UploadDialog } from "@/components/upload-dialog"
 import { TransactionFilters } from "@/components/transaction-filters"
 import type { Transaction } from "@/types/transaction"
 import { generateMockTransactions } from "@/lib/mock-data"
-import { API_URL } from "@/lib/config"
+import { getApiUrl } from "@/lib/config"
 
 export default function FinanceDashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -19,7 +19,8 @@ export default function FinanceDashboard() {
   // Load transactions function
   const loadTransactions = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/transactions`)
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/transactions`)
       const data = await response.json()
       
       if (data.success && data.transactions) {
@@ -53,8 +54,9 @@ export default function FinanceDashboard() {
       // Upload file to backend API
       const formData = new FormData()
       formData.append('file', file)
-
-      const response = await fetch(`${API_URL}/api/transactions/upload`, {
+      
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/transactions/upload`, {
         method: 'POST',
         body: formData,
       })
