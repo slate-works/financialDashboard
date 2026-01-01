@@ -11,6 +11,8 @@ import {
   ArrowDownRight,
   ChevronDown,
   Download,
+  MoreHorizontal,
+  Repeat,
 } from "lucide-react"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +22,28 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useData } from "@/lib/data-context"
 import { formatCurrency, formatDate, fixTextEncoding } from "@/lib/format"
@@ -34,8 +58,14 @@ const RANGE_SHORTCUTS = [
 ]
 
 export default function TransactionsPage() {
-  const { transactions, isLoading } = useData()
+  const { transactions, isLoading, addSubscription } = useData()
   const { toast } = useToast()
+  
+  // Subscription dialog state
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [subscriptionInterval, setSubscriptionInterval] = useState<string>("monthly")
+  const [isCreatingSubscription, setIsCreatingSubscription] = useState(false)
   
   // Filter state
   const [searchText, setSearchText] = useState("")
@@ -164,6 +194,35 @@ export default function TransactionsPage() {
       description: `${filteredTransactions.length} transactions exported to CSV.`,
     })
   }, [filteredTransactions, toast])
+  
+  const handleTrackAsSubscription = (transaction: Transaction) => {
+    setSelectedTransaction(transaction)
+    setSubscriptionInterval("monthly")
+    setSubscriptionDialogOpen(true)
+  }
+  
+  const handleCreateSubscription = async () => {
+    if (!selectedTransaction) return
+    
+    setIsCreatingSubscription(true)
+    try {
+      const success = await addSubscription({
+        name: selectedTransaction.description,
+        amount: Math.abs(selectedTransaction.amount),
+        category: selectedTransaction.category,
+        interval: subscriptionInterval,
+        startDate: selectedTransaction.date,
+        isActive: true,
+      })
+      
+      if (success) {
+        setSubscriptionDialogOpen(false)
+        setSelectedTransaction(null)
+      }
+    } finally {
+      setIsCreatingSubscription(false)
+    }
+  }
 
   if (isLoading) {
     return <TransactionsSkeleton />
@@ -360,7 +419,11 @@ export default function TransactionsPage() {
               </p>
             ) : (
               displayedTransactions.map((t) => (
-                <TransactionCard key={t.id} transaction={t} />
+                <TransactionCard 
+                  key={t.id} 
+                  transaction={t} 
+                  onTrackAsSubscription={handleTrackAsSubscription}
+                />
               ))
             )}
           </div>
@@ -375,13 +438,14 @@ export default function TransactionsPage() {
                   <TableHead className="font-semibold">Category</TableHead>
                   <TableHead className="font-semibold">Type</TableHead>
                   <TableHead className="text-right font-semibold">Amount</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayedTransactions.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="py-8 text-center text-muted-foreground"
                     >
                       No transactions match your filters.
@@ -424,6 +488,22 @@ export default function TransactionsPage() {
                           {formatCurrency(Math.abs(t.amount))}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleTrackAsSubscription(t)}>
+                              <Repeat className="mr-2 size-4" />
+                              Track as Subscription
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -446,11 +526,72 @@ export default function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+      
+      {/* Subscription Dialog */}
+      <Dialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Track as Subscription</DialogTitle>
+            <DialogDescription>
+              Add this transaction as a recurring subscription to track it over time.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTransaction && (
+            <div className="space-y-4 py-4">
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="font-medium">{fixTextEncoding(selectedTransaction.description)}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatCurrency(Math.abs(selectedTransaction.amount))} • {fixTextEncoding(selectedTransaction.category)}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="interval">Billing Interval</Label>
+                <Select
+                  value={subscriptionInterval}
+                  onValueChange={setSubscriptionInterval}
+                >
+                  <SelectTrigger id="interval">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSubscriptionDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateSubscription}
+              disabled={isCreatingSubscription}
+            >
+              {isCreatingSubscription ? "Adding..." : "Add Subscription"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-function TransactionCard({ transaction }: { transaction: Transaction }) {
+function TransactionCard({ 
+  transaction,
+  onTrackAsSubscription 
+}: { 
+  transaction: Transaction
+  onTrackAsSubscription: (t: Transaction) => void 
+}) {
   const t = transaction
   return (
     <div className="flex items-center justify-between rounded-lg border bg-card p-4">
@@ -464,28 +605,44 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
           </Badge>
         </div>
       </div>
-      <div className="ml-4 text-right">
-        <p
-          className={`font-semibold tabular-nums ${
-            t.type === "income" ? "text-success" : "text-destructive"
-          }`}
-        >
-          {t.type === "income" ? "+" : "-"}
-          {formatCurrency(Math.abs(t.amount))}
-        </p>
-        <div className="mt-1 flex items-center justify-end gap-1 text-xs">
-          {t.type === "income" ? (
-            <>
-              <ArrowUpRight className="size-3 text-success" />
-              <span className="text-success">Income</span>
-            </>
-          ) : (
-            <>
-              <ArrowDownRight className="size-3 text-destructive" />
-              <span className="text-destructive">Expense</span>
-            </>
-          )}
+      <div className="ml-4 flex items-center gap-2">
+        <div className="text-right">
+          <p
+            className={`font-semibold tabular-nums ${
+              t.type === "income" ? "text-success" : "text-destructive"
+            }`}
+          >
+            {t.type === "income" ? "+" : "-"}
+            {formatCurrency(Math.abs(t.amount))}
+          </p>
+          <div className="mt-1 flex items-center justify-end gap-1 text-xs">
+            {t.type === "income" ? (
+              <>
+                <ArrowUpRight className="size-3 text-success" />
+                <span className="text-success">Income</span>
+              </>
+            ) : (
+              <>
+                <ArrowDownRight className="size-3 text-destructive" />
+                <span className="text-destructive">Expense</span>
+              </>
+            )}
+          </div>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-8">
+              <MoreHorizontal className="size-4" />
+              <span className="sr-only">Actions</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onTrackAsSubscription(t)}>
+              <Repeat className="mr-2 size-4" />
+              Track as Subscription
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { format } from "date-fns"
 import {
   Plus,
@@ -38,16 +38,42 @@ type ManualRow = {
   note: string
 }
 
-const CATEGORIES = [
-  "Food & Dining",
-  "Transportation",
-  "Shopping",
-  "Entertainment",
+// Categories organized by type
+const EXPENSE_CATEGORIES = [
+  "Fast Food / Eating Out",
+  "Social Life",
+  "Pets",
+  "Transport",
+  "Culture",
+  "Household",
+  "Apparel",
+  "Beauty",
+  "Health",
+  "Education",
+  "Gift",
   "Bills",
-  "Healthcare",
+  "Entertainment",
+  "Groceries",
+  "Subscriptions",
+  "Uncategorized",
+]
+
+const INCOME_CATEGORIES = [
+  "Paycheck",
   "Salary",
   "Freelance",
-  "Uncategorized",
+  "Investment",
+  "Refund",
+  "Gift Received",
+  "Bonus",
+  "Other Income",
+]
+
+const TRANSFER_CATEGORIES = [
+  "Transfer",
+  "Account Transfer",
+  "Savings",
+  "Investment Transfer",
 ]
 
 function createEmptyRow(): ManualRow {
@@ -64,9 +90,51 @@ function createEmptyRow(): ManualRow {
 }
 
 export default function ManualEntryPage() {
-  const { submitManualEntries } = useData()
+  const { submitManualEntries, transactions } = useData()
   const { toast } = useToast()
   
+  // Get unique categories from existing transactions, organized by likely type
+  const transactionCategories = useMemo(() => {
+    const cats = new Set(transactions.map(t => t.category).filter(Boolean))
+    return Array.from(cats)
+  }, [transactions])
+  
+  // Function to get categories filtered by type
+  const getCategoriesForType = useCallback((type: "income" | "expense" | "transfer") => {
+    let baseCategories: string[]
+    
+    switch (type) {
+      case "income":
+        baseCategories = INCOME_CATEGORIES
+        break
+      case "transfer":
+        baseCategories = TRANSFER_CATEGORIES
+        break
+      case "expense":
+      default:
+        baseCategories = EXPENSE_CATEGORIES
+        break
+    }
+    
+    // Include transaction categories that match this type pattern
+    const dynamicCats = transactionCategories.filter(cat => {
+      const lowerCat = cat.toLowerCase()
+      if (type === "income") {
+        return lowerCat.includes("income") || lowerCat.includes("salary") || 
+               lowerCat.includes("paycheck") || lowerCat.includes("refund")
+      }
+      if (type === "transfer") {
+        return lowerCat.includes("transfer") || lowerCat.includes("savings")
+      }
+      // For expense, include everything not clearly income/transfer
+      return !lowerCat.includes("income") && !lowerCat.includes("salary") && 
+             !lowerCat.includes("paycheck") && !lowerCat.includes("transfer")
+    })
+    
+    // Merge and dedupe
+    return Array.from(new Set([...baseCategories, ...dynamicCats])).sort()
+  }, [transactionCategories])
+
   const [rows, setRows] = useState<ManualRow[]>([createEmptyRow()])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [bulkPaste, setBulkPaste] = useState("")
@@ -245,9 +313,15 @@ export default function ManualEntryPage() {
                   <Label htmlFor="quick-type">Type</Label>
                   <Select
                     value={quickEntry.type}
-                    onValueChange={(value: ManualRow["type"]) =>
-                      setQuickEntry((prev) => ({ ...prev, type: value }))
-                    }
+                    onValueChange={(value: ManualRow["type"]) => {
+                      const newCategories = getCategoriesForType(value)
+                      setQuickEntry((prev) => ({
+                        ...prev,
+                        type: value,
+                        // Reset category if it doesn't exist in new type's categories
+                        category: newCategories.includes(prev.category) ? prev.category : ""
+                      }))
+                    }}
                   >
                     <SelectTrigger id="quick-type">
                       <SelectValue />
@@ -270,8 +344,8 @@ export default function ManualEntryPage() {
                     <SelectTrigger id="quick-category">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {getCategoriesForType(quickEntry.type).map((cat) => (
                         <SelectItem key={cat} value={cat}>
                           {cat}
                         </SelectItem>
@@ -323,8 +397,8 @@ export default function ManualEntryPage() {
               <div className="hidden grid-cols-12 gap-2 text-xs font-medium text-muted-foreground lg:grid">
                 <div className="col-span-2">Date</div>
                 <div className="col-span-3">Description</div>
-                <div className="col-span-2">Category</div>
                 <div>Type</div>
+                <div className="col-span-2">Category</div>
                 <div className="col-span-2">Amount</div>
                 <div className="col-span-2">Actions</div>
               </div>
@@ -339,6 +413,7 @@ export default function ManualEntryPage() {
                     onChange={handleRowChange}
                     onRemove={handleRemoveRow}
                     canRemove={rows.length > 1}
+                    getCategoriesForType={getCategoriesForType}
                   />
                 ))}
               </div>
@@ -464,9 +539,21 @@ interface EntryRowProps {
   onChange: (id: string, field: keyof ManualRow, value: string) => void
   onRemove: (id: string) => void
   canRemove: boolean
+  getCategoriesForType: (type: "income" | "expense" | "transfer") => string[]
 }
 
-function EntryRow({ row, index, onChange, onRemove, canRemove }: EntryRowProps) {
+function EntryRow({ row, index, onChange, onRemove, canRemove, getCategoriesForType }: EntryRowProps) {
+  const categories = getCategoriesForType(row.type)
+  
+  // Reset category if current selection doesn't exist in new type's categories
+  const handleTypeChange = (newType: ManualRow["type"]) => {
+    onChange(row.id, "type", newType)
+    const newCategories = getCategoriesForType(newType)
+    if (row.category && !newCategories.includes(row.category)) {
+      onChange(row.id, "category", "")
+    }
+  }
+  
   return (
     <div className="space-y-3 rounded-lg border bg-card p-4 lg:grid lg:grid-cols-12 lg:gap-2 lg:space-y-0 lg:border-0 lg:bg-transparent lg:p-0">
       {/* Mobile Label */}
@@ -494,6 +581,24 @@ function EntryRow({ row, index, onChange, onRemove, canRemove }: EntryRowProps) 
         />
       </div>
 
+      {/* Type - Move before Category so type selection affects category options */}
+      <div className="lg:col-span-1">
+        <Label className="lg:sr-only">Type</Label>
+        <Select
+          value={row.type}
+          onValueChange={handleTypeChange}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="expense">Expense</SelectItem>
+            <SelectItem value="income">Income</SelectItem>
+            <SelectItem value="transfer">Transfer</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Category */}
       <div className="lg:col-span-2">
         <Label className="lg:sr-only">Category</Label>
@@ -504,30 +609,12 @@ function EntryRow({ row, index, onChange, onRemove, canRemove }: EntryRowProps) 
           <SelectTrigger>
             <SelectValue placeholder="Category" />
           </SelectTrigger>
-          <SelectContent>
-            {CATEGORIES.map((cat) => (
+          <SelectContent className="max-h-60 overflow-y-auto">
+            {categories.map((cat) => (
               <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Type */}
-      <div className="lg:col-span-1">
-        <Label className="lg:sr-only">Type</Label>
-        <Select
-          value={row.type}
-          onValueChange={(value: ManualRow["type"]) => onChange(row.id, "type", value)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="expense">Expense</SelectItem>
-            <SelectItem value="income">Income</SelectItem>
-            <SelectItem value="transfer">Transfer</SelectItem>
           </SelectContent>
         </Select>
       </div>

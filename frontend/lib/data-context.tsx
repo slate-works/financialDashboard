@@ -2,6 +2,17 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import type { Transaction } from "@/types/transaction"
+
+export type Subscription = {
+  id: number
+  name: string
+  amount: number
+  category: string
+  interval: string
+  startDate: string
+  isActive: boolean
+}
+
 import { getApiUrl } from "@/lib/config"
 import { useToast } from "@/hooks/use-toast"
 
@@ -35,6 +46,10 @@ interface DataContextType {
   handleFileUpload: (file: File) => Promise<void>
   handleDataCleared: () => void
   submitManualEntries: (entries: ManualEntry[]) => Promise<boolean>
+  subscriptions: Subscription[]
+  addSubscription: (data: Omit<Subscription, "id" | "createdAt" | "updatedAt">) => Promise<boolean>
+  deleteSubscription: (id: number) => Promise<boolean>
+  updateSubscription: (id: number, isActive: boolean) => Promise<boolean>
 }
 
 type ManualEntry = {
@@ -64,6 +79,7 @@ interface DataProviderProps {
 export function DataProvider({ children }: DataProviderProps) {
   const { toast } = useToast()
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [overview, setOverview] = useState<OverviewSummary | null>(null)
   const [importMeta, setImportMeta] = useState<ImportMeta>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -191,10 +207,110 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, [loadTransactions, loadOverview, toast])
 
+  const loadSubscriptions = useCallback(async () => {
+    try {
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/subscriptions`)
+      const data = await response.json()
+      
+      if (data.success && data.subscriptions) {
+        setSubscriptions(data.subscriptions)
+      }
+    } catch (error) {
+      console.error("Error loading subscriptions:", error)
+    }
+  }, [])
+
+  const addSubscription = useCallback(async (data: Omit<Subscription, "id" | "createdAt" | "updatedAt">): Promise<boolean> => {
+    try {
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/subscriptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      
+      if (!response.ok) throw new Error("Failed to add subscription")
+      
+      const result = await response.json()
+      if (result.success) {
+        toast({
+          title: "Subscription added",
+          description: "Subscription has been successfully tracked."
+        })
+        await loadSubscriptions()
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error("Error adding subscription:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add subscription.",
+        variant: "destructive"
+      })
+      return false
+    }
+  }, [loadSubscriptions, toast])
+
+  const deleteSubscription = useCallback(async (id: number): Promise<boolean> => {
+    try {
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/subscriptions/${id}`, {
+        method: "DELETE"
+      })
+      
+      if (!response.ok) throw new Error("Failed to delete subscription")
+      
+      const result = await response.json()
+      if (result.success) {
+        toast({
+          title: "Subscription removed",
+          description: "Subscription has been deleted."
+        })
+        await loadSubscriptions()
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error("Error deleting subscription:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete subscription.",
+        variant: "destructive"
+      })
+      return false
+    }
+  }, [loadSubscriptions, toast])
+
+  const updateSubscription = useCallback(async (id: number, isActive: boolean): Promise<boolean> => {
+    try {
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/subscriptions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive }),
+      })
+      
+      if (!response.ok) throw new Error("Failed to update subscription")
+      
+      const result = await response.json()
+      if (result.success) {
+        await loadSubscriptions()
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error("Error updating subscription:", error)
+      return false
+    }
+  }, [loadSubscriptions])
+
   useEffect(() => {
     loadTransactions()
     loadOverview()
-  }, [loadTransactions, loadOverview])
+    loadSubscriptions()
+  }, [loadTransactions, loadOverview, loadSubscriptions])
 
   return (
     <DataContext.Provider
@@ -208,6 +324,10 @@ export function DataProvider({ children }: DataProviderProps) {
         handleFileUpload,
         handleDataCleared,
         submitManualEntries,
+        subscriptions,
+        addSubscription,
+        deleteSubscription,
+        updateSubscription,
       }}
     >
       {children}
