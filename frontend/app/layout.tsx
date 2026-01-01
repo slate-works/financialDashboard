@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
+import { DataProvider } from '@/lib/data-context'
+import { AppSidebar } from '@/components/app-sidebar'
 import './globals.css'
 
 const inter = Inter({
@@ -48,8 +50,23 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster />
+          <DataProvider>
+            <div className="relative min-h-screen bg-background">
+              {/* Background texture */}
+              <div className="texture-overlay" aria-hidden="true" />
+              
+              {/* Sidebar navigation */}
+              <AppSidebar />
+              
+              {/* Main content area */}
+              <main className="min-h-screen pt-14 lg:pl-64 lg:pt-0">
+                <div className="page-container py-6 lg:py-8">
+                  {children}
+                </div>
+              </main>
+            </div>
+            <Toaster />
+          </DataProvider>
         </ThemeProvider>
         <Analytics />
       </body>
