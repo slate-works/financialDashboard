@@ -1,6 +1,27 @@
 import { prisma } from "../db/index.js"
 import type { Prisma, Transaction } from "@prisma/client"
 
+/**
+ * Normalize text for comparison - fixes encoding issues and standardizes
+ */
+function normalizeForComparison(text: string): string {
+  if (!text) return ""
+  return text
+    // Fix all types of apostrophe-like characters
+    .replace(/[\u2018\u2019\u2016\uFFFD\u0092\u0091'`´ʼʻˈˊ‖]/g, "'")
+    // Fix all types of quote characters
+    .replace(/[\u201C\u201D\u0093\u0094""„‟]/g, '"')
+    // Fix dashes
+    .replace(/[\u2013\u2014\u2015\u0096\u0097]/g, "-")
+    // Common encoding corruptions
+    .replace(/â€™/g, "'")
+    .replace(/â€˜/g, "'")
+    .replace(/â€œ/g, '"')
+    .replace(/â€/g, '"')
+    .toLowerCase()
+    .trim()
+}
+
 export interface TransactionFilters {
   categories?: string[]
   dateFrom?: string
@@ -68,7 +89,7 @@ export async function createTransactionRecord(
 
 /**
  * Create multiple transactions in the database
- * Checks for duplicates before inserting
+ * Checks for duplicates before inserting using normalized comparison
  */
 export async function createManyTransactions(
   transactions: Array<{
@@ -82,6 +103,20 @@ export async function createManyTransactions(
   }>,
 ): Promise<Transaction[]> {
   const results: Transaction[] = []
+
+  // Get all existing transactions for duplicate checking
+  const existingTransactions = await prisma.transaction.findMany({
+    select: { id: true, date: true, description: true, amount: true }
+  })
+
+  // Build a set of normalized existing transactions for fast lookup
+  const existingSet = new Set(
+    existingTransactions.map(t => {
+      const dateStr = new Date(t.date).toISOString().split('T')[0]
+      const normalizedDesc = normalizeForComparison(t.description)
+      return `${dateStr}|${normalizedDesc}|${t.amount}`
+    })
+  )
 
   // Insert transactions one by one to handle duplicates
   for (const transaction of transactions) {
@@ -97,20 +132,18 @@ export async function createManyTransactions(
 
     const data = normalizeTransactionInput(normalized)
 
-    // Check if transaction already exists (same date, description, amount)
-    const existing = await prisma.transaction.findFirst({
-      where: {
-        date: data.date,
-        description: data.description,
-        amount: data.amount,
-      },
-    })
+    // Create normalized key for duplicate checking
+    const dateStr = data.date.toISOString().split('T')[0]
+    const normalizedDesc = normalizeForComparison(data.description)
+    const key = `${dateStr}|${normalizedDesc}|${data.amount}`
 
-    if (!existing) {
+    if (!existingSet.has(key)) {
       const created = await prisma.transaction.create({
         data,
       })
       results.push(created)
+      // Add to existing set to prevent duplicates within the same import
+      existingSet.add(key)
     } else {
       console.log('Skipping duplicate transaction:', {
         date: data.date,
@@ -233,6 +266,88 @@ export async function getCategorySummary(): Promise<CategorySummary[]> {
 export async function deleteAllTransactions(): Promise<number> {
   const result = await prisma.transaction.deleteMany()
   return result.count
+}
+
+/**
+ * Clean text by fixing encoding issues (for database cleanup)
+ */
+function cleanTextForStorage(text: string): string {
+  if (!text) return ""
+  return text
+    // Fix all types of apostrophe-like characters to straight apostrophe
+    .replace(/[\u2018\u2019\u2016\uFFFD\u0092\u0091'`´ʼʻˈˊ‖]/g, "'")
+    // Fix all types of quote characters
+    .replace(/[\u201C\u201D\u0093\u0094""„‟]/g, '"')
+    // Fix dashes
+    .replace(/[\u2013\u2014\u2015\u0096\u0097]/g, "-")
+    // Common encoding corruptions
+    .replace(/â€™/g, "'")
+    .replace(/â€˜/g, "'")
+    .replace(/â€œ/g, '"')
+    .replace(/â€/g, '"')
+    .replace(/â€"/g, "-")
+    .trim()
+}
+
+/**
+ * Deduplicate transactions in the database
+ * Keeps the first occurrence and removes duplicates based on date, normalized description, and amount
+ * Also fixes encoding issues in descriptions and categories
+ */
+export async function deduplicateTransactions(): Promise<{ deleted: number; fixed: number }> {
+  const allTransactions = await prisma.transaction.findMany({
+    orderBy: { createdAt: 'asc' } // Keep oldest entries
+  })
+
+  const seen = new Map<string, number>() // key -> id of transaction to keep
+  const toDelete: number[] = []
+  const toFix: Array<{ id: number; description: string; category: string }> = []
+
+  for (const t of allTransactions) {
+    const dateStr = new Date(t.date).toISOString().split('T')[0]
+    const normalizedDesc = normalizeForComparison(t.description)
+    const key = `${dateStr}|${normalizedDesc}|${t.amount}`
+
+    // Check if description or category needs encoding fix
+    const cleanedDesc = cleanTextForStorage(t.description)
+    const cleanedCat = cleanTextForStorage(t.category)
+    
+    if (cleanedDesc !== t.description || cleanedCat !== t.category) {
+      toFix.push({ id: t.id, description: cleanedDesc, category: cleanedCat })
+    }
+
+    if (seen.has(key)) {
+      // This is a duplicate - mark for deletion
+      toDelete.push(t.id)
+    } else {
+      // First occurrence - keep it
+      seen.set(key, t.id)
+    }
+  }
+
+  // First fix encoding issues in transactions we're keeping
+  for (const fix of toFix) {
+    if (!toDelete.includes(fix.id)) {
+      await prisma.transaction.update({
+        where: { id: fix.id },
+        data: { description: fix.description, category: fix.category }
+      })
+    }
+  }
+
+  // Delete duplicates
+  if (toDelete.length > 0) {
+    await prisma.transaction.deleteMany({
+      where: { id: { in: toDelete } }
+    })
+  }
+
+  console.log(`Deduplication complete: deleted ${toDelete.length} duplicates, fixed ${toFix.filter(f => !toDelete.includes(f.id)).length} encoding issues`)
+
+  return { 
+    deleted: toDelete.length, 
+    fixed: toFix.filter(f => !toDelete.includes(f.id)).length 
+  }
 }
 
 /**

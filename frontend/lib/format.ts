@@ -22,6 +22,20 @@ export function fixTextEncoding(text: string): string {
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, "-")
+    // Fix double vertical line and other misencoded apostrophes
+    .replace(/[\u2016]/g, "'")        // Double vertical line to apostrophe
+    .replace(/[\u2015]/g, "-")        // Horizontal bar to hyphen
+    .replace(/[\uFFFD]/g, "'")        // Replacement character to apostrophe
+    // Fix Windows-1252 specific characters
+    .replace(/\u0092/g, "'")          // Windows-1252 right single quote
+    .replace(/\u0091/g, "'")          // Windows-1252 left single quote
+    .replace(/\u0093/g, '"')          // Windows-1252 left double quote
+    .replace(/\u0094/g, '"')          // Windows-1252 right double quote
+    .replace(/\u0096/g, "-")          // Windows-1252 en dash
+    .replace(/\u0097/g, "-")          // Windows-1252 em dash
+    // Additional patterns for corrupted apostrophes
+    .replace(/['`´ʼʻˈˊ‖]/g, "'")      // Various quote-like characters
+    .replace(/[""„‟]/g, '"')          // Various double quote characters
 }
 
 /**
