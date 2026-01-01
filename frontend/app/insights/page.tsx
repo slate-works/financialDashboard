@@ -14,6 +14,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useData } from "@/lib/data-context"
+import { fixTextEncoding } from "@/lib/format"
 import {
   BarChart,
   Bar,
@@ -63,7 +64,7 @@ export default function InsightsPage() {
 
     return Object.entries(categoryData)
       .map(([name, value], index) => ({
-        name,
+        name: fixTextEncoding(name),
         value: Number(value.toFixed(2)),
         color: CHART_COLORS[index % CHART_COLORS.length],
       }))
@@ -112,7 +113,7 @@ export default function InsightsPage() {
 
   // All categories
   const allCategories = useMemo(
-    () => Array.from(new Set(transactions.map((t) => t.category))).sort(),
+    () => Array.from(new Set(transactions.map((t) => fixTextEncoding(t.category)))).sort(),
     [transactions]
   )
 
@@ -121,7 +122,7 @@ export default function InsightsPage() {
     if (!selectedCategory) return []
 
     const monthlyTrend = transactions
-      .filter((t) => t.category === selectedCategory)
+      .filter((t) => fixTextEncoding(t.category) === selectedCategory)
       .reduce(
         (acc, t) => {
           const date = new Date(t.date)

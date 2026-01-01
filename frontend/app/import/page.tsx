@@ -309,7 +309,7 @@ export default function ImportPage() {
                 <span className="font-medium">
                   {importMeta.lastImportedAt
                     ? formatDate(importMeta.lastImportedAt)
-                    : "—"}
+                    : "--"}
                 </span>
               </div>
             </div>

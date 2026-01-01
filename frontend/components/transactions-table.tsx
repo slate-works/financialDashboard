@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { Transaction } from "@/types/transaction"
 import { ArrowDownRight, ArrowUpRight } from "lucide-react"
+import { fixTextEncoding } from "@/lib/format"
 
 interface TransactionsTableProps {
   transactions: Transaction[]
@@ -61,10 +62,10 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
                         year: "numeric",
                       })}
                     </TableCell>
-                    <TableCell className="font-medium">{transaction.description}</TableCell>
+                    <TableCell className="font-medium">{fixTextEncoding(transaction.description)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="font-normal">
-                        {transaction.category}
+                        {fixTextEncoding(transaction.category)}
                       </Badge>
                     </TableCell>
                     <TableCell>

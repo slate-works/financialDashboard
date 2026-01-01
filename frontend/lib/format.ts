@@ -3,6 +3,28 @@
  */
 
 /**
+ * Fix common text encoding issues (corrupted apostrophes, quotes, etc.)
+ */
+export function fixTextEncoding(text: string): string {
+  if (!text) return ""
+  
+  return text
+    // Fix UTF-8 interpreted as Windows-1252 encoding issues
+    .replace(/â€™/g, "'")
+    .replace(/â€˜/g, "'")
+    .replace(/â€œ/g, '"')
+    .replace(/â€/g, '"')
+    .replace(/â€"/g, "-")
+    .replace(/Ã¢â‚¬â„¢/g, "'")
+    .replace(/Ã¢â‚¬Å"/g, '"')
+    .replace(/Ã¢â‚¬/g, '"')
+    // Fix curly quotes/apostrophes to straight ones
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+}
+
+/**
  * Format a number as currency (USD)
  */
 export function formatCurrency(value: number): string {

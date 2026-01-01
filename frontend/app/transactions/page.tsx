@@ -22,7 +22,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useData } from "@/lib/data-context"
-import { formatCurrency, formatDate } from "@/lib/format"
+import { formatCurrency, formatDate, fixTextEncoding } from "@/lib/format"
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from "@/types/transaction"
 
@@ -393,10 +393,10 @@ export default function TransactionsPage() {
                       <TableCell className="font-mono text-sm">
                         {formatDate(t.date, "short")}
                       </TableCell>
-                      <TableCell className="font-medium">{t.description}</TableCell>
+                      <TableCell className="font-medium">{fixTextEncoding(t.description)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-normal">
-                          {t.category}
+                          {fixTextEncoding(t.category)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -455,12 +455,12 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
   return (
     <div className="flex items-center justify-between rounded-lg border bg-card p-4">
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{t.description}</p>
+        <p className="truncate font-medium">{fixTextEncoding(t.description)}</p>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>{formatDate(t.date, "short")}</span>
           <span>•</span>
           <Badge variant="outline" className="text-xs font-normal">
-            {t.category}
+            {fixTextEncoding(t.category)}
           </Badge>
         </div>
       </div>

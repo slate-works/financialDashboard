@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { Transaction } from "@/types/transaction"
+import { fixTextEncoding } from "@/lib/format"
 import {
   BarChart,
   Bar,
@@ -86,7 +87,7 @@ function DashboardChartsComponent({ transactions }: DashboardChartsProps) {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([name, value]) => ({
-        name,
+        name: fixTextEncoding(name),
         value: Number(value.toFixed(2)),
         color: CATEGORY_COLORS[name] || "#6b7280",
       }))
@@ -94,7 +95,7 @@ function DashboardChartsComponent({ transactions }: DashboardChartsProps) {
 
   // Category trend over time
   const allCategories = useMemo(
-    () => Array.from(new Set(transactions.map((t) => t.category))).sort(),
+    () => Array.from(new Set(transactions.map((t) => fixTextEncoding(t.category)))).sort(),
     [transactions],
   )
   
@@ -102,7 +103,7 @@ function DashboardChartsComponent({ transactions }: DashboardChartsProps) {
     if (!selectedCategory) return []
 
     const monthlyTrend = transactions
-      .filter((t) => t.category === selectedCategory)
+      .filter((t) => fixTextEncoding(t.category) === selectedCategory)
       .reduce(
         (acc, t) => {
           const date = new Date(t.date)

@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useData } from "@/lib/data-context"
-import { formatCurrency, formatDate, getCurrentMonthYear } from "@/lib/format"
+import { formatCurrency, formatDate, getCurrentMonthYear, fixTextEncoding } from "@/lib/format"
 
 export default function DashboardPage() {
   const { transactions, overview, isLoading } = useData()
@@ -72,8 +72,8 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Savings Rate"
-          value={overview?.savingsRate ? `${overview.savingsRate.toFixed(1)}%` : "—"}
-          subtitle="Target: 15–30% monthly"
+          value={overview?.savingsRate ? `${overview.savingsRate.toFixed(1)}%` : "--"}
+          subtitle="Target: 15-30% monthly"
           icon={PiggyBank}
           trend={
             overview?.savingsRate
@@ -87,7 +87,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Budget Adherence"
-          value={overview?.budgetAdherence ? `${overview.budgetAdherence.toFixed(0)}%` : "—"}
+          value={overview?.budgetAdherence ? `${overview.budgetAdherence.toFixed(0)}%` : "--"}
           subtitle="vs. 85% spend target"
           icon={Activity}
           trend={
@@ -139,9 +139,9 @@ export default function DashboardPage() {
                     className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-foreground">{t.description}</p>
+                      <p className="truncate font-medium text-foreground">{fixTextEncoding(t.description)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(t.date, "short")} • {t.category}
+                        {formatDate(t.date, "short")} • {fixTextEncoding(t.category)}
                       </p>
                     </div>
                     <p
@@ -171,7 +171,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Current rate</span>
                 <span className="font-semibold">
-                  {overview?.savingsRate ? `${overview.savingsRate.toFixed(1)}%` : "—"}
+                  {overview?.savingsRate ? `${overview.savingsRate.toFixed(1)}%` : "--"}
                 </span>
               </div>
               <Progress

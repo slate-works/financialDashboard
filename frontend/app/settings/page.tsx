@@ -338,7 +338,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>
-              <strong className="text-foreground">Finance Dashboard</strong> — A
+              <strong className="text-foreground">Finance Dashboard</strong> - A
               self-hosted personal finance tracker
             </p>
             <p>
