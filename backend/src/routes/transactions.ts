@@ -9,6 +9,7 @@ import {
   getOverviewData,
   deleteAllTransactions,
   deduplicateTransactions,
+  getFinancialAnalytics,
 } from "../controllers/transactionController.js"
 import multer from "multer"
 
@@ -40,5 +41,8 @@ router.get("/summary/monthly", getMonthlySummaryData)
 router.get("/summary/categories", getCategorySummaryData)
 // GET /api/transactions/summary/overview - KPIs
 router.get("/summary/overview", getOverviewData)
+
+// GET /api/transactions/analytics - Full financial analytics with confidence scoring
+router.get("/analytics", getFinancialAnalytics)
 
 export default router

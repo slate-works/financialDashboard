@@ -13,6 +13,8 @@ export type Subscription = {
   isActive: boolean
 }
 
+import type { FinancialAnalytics } from "@/types/analytics"
+
 import { getApiUrl } from "@/lib/config"
 import { useToast } from "@/hooks/use-toast"
 
@@ -39,10 +41,12 @@ type ImportMeta = {
 interface DataContextType {
   transactions: Transaction[]
   overview: OverviewSummary | null
+  analytics: FinancialAnalytics | null
   importMeta: ImportMeta
   isLoading: boolean
   loadTransactions: () => Promise<void>
   loadOverview: () => Promise<void>
+  loadAnalytics: (months?: number) => Promise<void>
   handleFileUpload: (file: File) => Promise<void>
   handleDataCleared: () => void
   submitManualEntries: (entries: ManualEntry[]) => Promise<boolean>
@@ -81,6 +85,7 @@ export function DataProvider({ children }: DataProviderProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [overview, setOverview] = useState<OverviewSummary | null>(null)
+  const [analytics, setAnalytics] = useState<FinancialAnalytics | null>(null)
   const [importMeta, setImportMeta] = useState<ImportMeta>({})
   const [isLoading, setIsLoading] = useState(true)
 
@@ -122,6 +127,19 @@ export function DataProvider({ children }: DataProviderProps) {
     }
   }, [])
 
+  const loadAnalytics = useCallback(async (months: number = 6) => {
+    try {
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/transactions/analytics?months=${months}`)
+      const data = await response.json()
+      if (data.success) {
+        setAnalytics(data.analytics)
+      }
+    } catch (error) {
+      console.error("Error fetching analytics:", error)
+    }
+  }, [])
+
   const handleFileUpload = useCallback(async (file: File) => {
     try {
       const formData = new FormData()
@@ -150,6 +168,7 @@ export function DataProvider({ children }: DataProviderProps) {
         })
         await loadTransactions()
         await loadOverview()
+        await loadAnalytics()
       }
     } catch (error) {
       console.error("Error uploading file:", error)
@@ -159,11 +178,12 @@ export function DataProvider({ children }: DataProviderProps) {
         variant: "destructive",
       })
     }
-  }, [loadTransactions, loadOverview, toast])
+  }, [loadTransactions, loadOverview, loadAnalytics, toast])
 
   const handleDataCleared = useCallback(() => {
     setTransactions([])
     setOverview(null)
+    setAnalytics(null)
     setImportMeta({})
   }, [])
 
@@ -195,6 +215,7 @@ export function DataProvider({ children }: DataProviderProps) {
       })
       await loadTransactions()
       await loadOverview()
+      await loadAnalytics()
       return true
     } catch (error) {
       console.error("Error saving manual entries:", error)
@@ -205,7 +226,7 @@ export function DataProvider({ children }: DataProviderProps) {
       })
       return false
     }
-  }, [loadTransactions, loadOverview, toast])
+  }, [loadTransactions, loadOverview, loadAnalytics, toast])
 
   const loadSubscriptions = useCallback(async () => {
     try {
@@ -309,18 +330,21 @@ export function DataProvider({ children }: DataProviderProps) {
   useEffect(() => {
     loadTransactions()
     loadOverview()
+    loadAnalytics()
     loadSubscriptions()
-  }, [loadTransactions, loadOverview, loadSubscriptions])
+  }, [loadTransactions, loadOverview, loadAnalytics, loadSubscriptions])
 
   return (
     <DataContext.Provider
       value={{
         transactions,
         overview,
+        analytics,
         importMeta,
         isLoading,
         loadTransactions,
         loadOverview,
+        loadAnalytics,
         handleFileUpload,
         handleDataCleared,
         submitManualEntries,
