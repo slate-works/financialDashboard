@@ -16,11 +16,12 @@ import {
 import { PageHeader } from "@/components/page-header"
 import { StatCard } from "@/components/stat-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useData } from "@/lib/data-context"
 import { formatCurrency, formatDate, getCurrentMonthYear, fixTextEncoding } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 export default function DashboardPage() {
   const { transactions, overview, isLoading } = useData()
@@ -277,30 +278,46 @@ export default function DashboardPage() {
             <CardDescription>Common tasks at your fingertips</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4" asChild>
-              <Link href="/entry">
-                <DollarSign className="size-5" />
-                <span className="text-sm">Add Entry</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4" asChild>
-              <Link href="/import">
-                <Receipt className="size-5" />
-                <span className="text-sm">Import CSV</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4" asChild>
-              <Link href="/transactions">
-                <Calendar className="size-5" />
-                <span className="text-sm">Transactions</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4" asChild>
-              <Link href="/insights">
-                <BarChart3 className="size-5" />
-                <span className="text-sm">Insights</span>
-              </Link>
-            </Button>
+            <Link
+              href="/entry"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-auto flex-col gap-2 py-4"
+              )}
+            >
+              <DollarSign className="size-5" />
+              <span className="text-sm">Add Entry</span>
+            </Link>
+            <Link
+              href="/import"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-auto flex-col gap-2 py-4"
+              )}
+            >
+              <Receipt className="size-5" />
+              <span className="text-sm">Import CSV</span>
+            </Link>
+            <Link
+              href="/transactions"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-auto flex-col gap-2 py-4"
+              )}
+            >
+              <Calendar className="size-5" />
+              <span className="text-sm">Transactions</span>
+            </Link>
+            <Link
+              href="/insights"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-auto flex-col gap-2 py-4"
+              )}
+            >
+              <BarChart3 className="size-5" />
+              <span className="text-sm">Insights</span>
+            </Link>
           </CardContent>
         </Card>
       </div>
