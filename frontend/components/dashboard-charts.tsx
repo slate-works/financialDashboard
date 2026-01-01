@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, memo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -37,59 +37,66 @@ const CATEGORY_COLORS: Record<string, string> = {
   Freelance: "#06b6d4", // cyan
 }
 
-export function DashboardCharts({ transactions }: DashboardChartsProps) {
+function DashboardChartsComponent({ transactions }: DashboardChartsProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("")
-  const [calendarMonth, setCalendarMonth] = useState(new Date())
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date())
 
   // Spending by category
-  const categoryData = transactions
-    .filter((t) => t.type === "expense")
-    .reduce(
-      (acc, t) => {
-        const category = t.category
-        if (!acc[category]) {
-          acc[category] = 0
-        }
-        acc[category] += Math.abs(t.amount)
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+  const categoryChartData = useMemo(() => {
+    const categoryData = transactions
+      .filter((t) => t.type === "expense")
+      .reduce(
+        (acc, t) => {
+          const category = t.category
+          if (!acc[category]) {
+            acc[category] = 0
+          }
+          acc[category] += Math.abs(t.amount)
+          return acc
+        },
+        {} as Record<string, number>,
+      )
 
-  const categoryChartData = Object.entries(categoryData).map(([name, value]) => ({
-    name,
-    value: Number(value.toFixed(2)),
-    color: CATEGORY_COLORS[name] || "#6b7280",
-  }))
-
-  // Top 5 categories for current month
-  const currentMonth = new Date().toLocaleDateString("en-US", { month: "short", year: "2-digit" })
-  const currentMonthCategories = transactions
-    .filter((t) => {
-      const date = new Date(t.date)
-      const month = date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
-      return t.type === "expense" && month === currentMonth
-    })
-    .reduce(
-      (acc, t) => {
-        if (!acc[t.category]) acc[t.category] = 0
-        acc[t.category] += Math.abs(t.amount)
-        return acc
-      },
-      {} as Record<string, number>,
-    )
-
-  const top5Categories = Object.entries(currentMonthCategories)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([name, value]) => ({
+    return Object.entries(categoryData).map(([name, value]) => ({
       name,
       value: Number(value.toFixed(2)),
       color: CATEGORY_COLORS[name] || "#6b7280",
     }))
+  }, [transactions])
+
+  // Top 5 categories for current month
+  const currentMonth = new Date().toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+  const top5Categories = useMemo(() => {
+    const currentMonthCategories = transactions
+      .filter((t) => {
+        const date = new Date(t.date)
+        const month = date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+        return t.type === "expense" && month === currentMonth
+      })
+      .reduce(
+        (acc, t) => {
+          if (!acc[t.category]) acc[t.category] = 0
+          acc[t.category] += Math.abs(t.amount)
+          return acc
+        },
+        {} as Record<string, number>,
+      )
+
+    return Object.entries(currentMonthCategories)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([name, value]) => ({
+        name,
+        value: Number(value.toFixed(2)),
+        color: CATEGORY_COLORS[name] || "#6b7280",
+      }))
+  }, [transactions, currentMonth])
 
   // Category trend over time
-  const allCategories = Array.from(new Set(transactions.map((t) => t.category))).sort()
+  const allCategories = useMemo(
+    () => Array.from(new Set(transactions.map((t) => t.category))).sort(),
+    [transactions],
+  )
   
   const categoryTrendData = useMemo(() => {
     if (!selectedCategory) return []
@@ -183,37 +190,39 @@ export function DashboardCharts({ transactions }: DashboardChartsProps) {
   
   const monthYearDisplay = calendarMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })
 
-  const monthlyData = transactions.reduce(
-    (acc, t) => {
-      const date = new Date(t.date)
-      const month = date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
-      if (!acc[month]) {
-        acc[month] = { month, income: 0, expenses: 0, net: 0 }
-      }
-      if (t.type === "income") {
-        acc[month].income += Math.abs(t.amount)
-      } else {
-        acc[month].expenses += Math.abs(t.amount)
-      }
-      acc[month].net = acc[month].income - acc[month].expenses
-      return acc
-    },
-    {} as Record<string, any>,
-  )
+  const monthlyChartData = useMemo(() => {
+    const monthlyData = transactions.reduce(
+      (acc, t) => {
+        const date = new Date(t.date)
+        const month = date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+        if (!acc[month]) {
+          acc[month] = { month, income: 0, expenses: 0, net: 0 }
+        }
+        if (t.type === "income") {
+          acc[month].income += Math.abs(t.amount)
+        } else {
+          acc[month].expenses += Math.abs(t.amount)
+        }
+        acc[month].net = acc[month].income - acc[month].expenses
+        return acc
+      },
+      {} as Record<string, any>,
+    )
 
-  const monthlyChartData = Object.values(monthlyData)
-    .map((d: any) => ({
-      month: d.month,
-      income: Number(d.income.toFixed(2)),
-      expenses: Number(d.expenses.toFixed(2)),
-      net: Number(d.net.toFixed(2)),
-      netColor: d.net >= 0 ? "#10b981" : "#ef4444",
-    }))
-    .sort((a, b) => {
-      const [aMonth, aYear] = a.month.split(" ")
-      const [bMonth, bYear] = b.month.split(" ")
-      return new Date(`${aMonth} 1, 20${aYear}`).getTime() - new Date(`${bMonth} 1, 20${bYear}`).getTime()
-    })
+    return Object.values(monthlyData)
+      .map((d: any) => ({
+        month: d.month,
+        income: Number(d.income.toFixed(2)),
+        expenses: Number(d.expenses.toFixed(2)),
+        net: Number(d.net.toFixed(2)),
+        netColor: d.net >= 0 ? "#10b981" : "#ef4444",
+      }))
+      .sort((a, b) => {
+        const [aMonth, aYear] = a.month.split(" ")
+        const [bMonth, bYear] = b.month.split(" ")
+        return new Date(`${aMonth} 1, 20${aYear}`).getTime() - new Date(`${bMonth} 1, 20${bYear}`).getTime()
+      })
+  }, [transactions])
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -231,7 +240,7 @@ export function DashboardCharts({ transactions }: DashboardChartsProps) {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
@@ -522,3 +531,30 @@ export function DashboardCharts({ transactions }: DashboardChartsProps) {
     </div>
   )
 }
+
+// Memoize component with custom comparison to prevent re-renders when transactions
+// array reference changes but content is the same
+export const DashboardCharts = memo(DashboardChartsComponent, (prevProps, nextProps) => {
+  // If lengths differ, props changed
+  if (prevProps.transactions.length !== nextProps.transactions.length) {
+    return false
+  }
+  
+  // Compare transaction IDs to detect actual changes
+  const prevIds = new Set(prevProps.transactions.map(t => t.id))
+  const nextIds = new Set(nextProps.transactions.map(t => t.id))
+  
+  if (prevIds.size !== nextIds.size) {
+    return false
+  }
+  
+  // Check if all IDs are the same
+  for (const id of prevIds) {
+    if (!nextIds.has(id)) {
+      return false
+    }
+  }
+  
+  // Props are equal, don't re-render (return true means equal)
+  return true
+})

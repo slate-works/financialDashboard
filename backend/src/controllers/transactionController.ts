@@ -1,13 +1,31 @@
 import type { Request, Response } from "express"
+import { z } from "zod"
 import { parseCSVFile } from "../services/csvParser.js"
 import type { TransactionFilters } from "../services/transactionService.js"
 import {
   createManyTransactions,
+  createTransactionRecord,
   getTransactions,
   getMonthlySummary,
   getCategorySummary,
+  getOverviewSummary,
   deleteAllTransactions as deleteAllTransactionsService,
 } from "../services/transactionService.js"
+
+const transactionPayloadSchema = z.object({
+  date: z.union([z.string(), z.date()]).optional(),
+  description: z.string().trim().min(1),
+  category: z.string().trim().min(1),
+  amount: z
+    .union([z.number(), z.string()])
+    .transform((value) => (typeof value === "number" ? value : Number.parseFloat(value)))
+    .refine((value) => Number.isFinite(value), { message: "Amount must be a valid number" }),
+  type: z.enum(["income", "expense", "transfer"]).default("expense"),
+  account: z.string().optional().nullable(),
+  note: z.string().optional().nullable(),
+})
+
+const manualTransactionsSchema = z.array(transactionPayloadSchema)
 
 /**
  * POST /api/transactions/upload
@@ -35,6 +53,73 @@ export async function uploadTransactions(req: Request, res: Response): Promise<v
   } catch (error) {
     console.error("Error uploading transactions:", error)
     res.status(500).json({ error: "Failed to upload transactions" })
+  }
+}
+
+/**
+ * POST /api/transactions
+ * Create a single transaction (manual entry)
+ */
+export async function createTransaction(req: Request, res: Response): Promise<void> {
+  try {
+    const parsed = transactionPayloadSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid transaction payload", details: parsed.error.flatten() })
+      return
+    }
+
+    const payload = parsed.data
+    const created = await createTransactionRecord({
+      date: payload.date ? new Date(payload.date) : new Date(),
+      description: payload.description,
+      category: payload.category,
+      amount: payload.amount,
+      type: payload.type,
+      account: payload.account ?? null,
+      note: payload.note ?? null,
+    })
+
+    res.status(201).json({ success: true, transaction: created })
+  } catch (error) {
+    console.error("Error creating transaction:", error)
+    res.status(500).json({ error: "Failed to create transaction" })
+  }
+}
+
+/**
+ * POST /api/transactions/manual
+ * Create multiple transactions from batch/manual entry
+ */
+export async function createManualTransactions(req: Request, res: Response): Promise<void> {
+  try {
+    const payload = Array.isArray(req.body) ? req.body : (req.body?.transactions ?? [])
+    const parsed = manualTransactionsSchema.safeParse(payload)
+
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid manual transactions", details: parsed.error.flatten() })
+      return
+    }
+
+    const normalized = parsed.data.map((item) => ({
+      date: item.date ? new Date(item.date) : new Date(),
+      description: item.description,
+      category: item.category,
+      amount: item.amount,
+      type: item.type,
+      account: item.account ?? null,
+      note: item.note ?? null,
+    }))
+
+    const created = await createManyTransactions(normalized)
+
+    res.status(201).json({
+      success: true,
+      count: created.length,
+      transactions: created,
+    })
+  } catch (error) {
+    console.error("Error creating manual transactions:", error)
+    res.status(500).json({ error: "Failed to create manual transactions" })
   }
 }
 
@@ -108,6 +193,24 @@ export async function getCategorySummaryData(req: Request, res: Response): Promi
   } catch (error) {
     console.error("Error fetching category summary:", error)
     res.status(500).json({ error: "Failed to fetch category summary" })
+  }
+}
+
+/**
+ * GET /api/transactions/summary/overview
+ * High-level KPIs for dashboard
+ */
+export async function getOverviewData(req: Request, res: Response): Promise<void> {
+  try {
+    const overview = await getOverviewSummary()
+
+    res.json({
+      success: true,
+      overview,
+    })
+  } catch (error) {
+    console.error("Error fetching overview summary:", error)
+    res.status(500).json({ error: "Failed to fetch overview summary" })
   }
 }
 

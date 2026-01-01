@@ -19,15 +19,16 @@ interface TransactionFiltersProps {
     searchText: string
     month?: string
   }) => void
+  initialDateRange?: { from: Date | undefined; to: Date | undefined }
+  initialSearch?: string
 }
 
-export function TransactionFilters({ transactions, onFilterChange }: TransactionFiltersProps) {
-  const [searchText, setSearchText] = useState("")
+export function TransactionFilters({ transactions, onFilterChange, initialDateRange, initialSearch }: TransactionFiltersProps) {
+  const [searchText, setSearchText] = useState(initialSearch ?? "")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: undefined,
-    to: undefined,
-  })
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>(
+    initialDateRange ?? { from: undefined, to: undefined },
+  )
   const [selectedMonth, setSelectedMonth] = useState<string>("")
 
   const categories = Array.from(new Set(transactions.map((t) => t.category)))
@@ -50,7 +51,19 @@ export function TransactionFilters({ transactions, onFilterChange }: Transaction
       searchText,
       month: selectedMonth,
     })
-  }, [selectedCategories, dateRange, searchText, selectedMonth])
+  }, [selectedCategories, dateRange, searchText, selectedMonth, onFilterChange])
+
+  useEffect(() => {
+    if (initialDateRange) {
+      setDateRange(initialDateRange)
+    }
+  }, [initialDateRange?.from, initialDateRange?.to])
+
+  useEffect(() => {
+    if (initialSearch !== undefined) {
+      setSearchText(initialSearch)
+    }
+  }, [initialSearch])
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>
