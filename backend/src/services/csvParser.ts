@@ -24,14 +24,18 @@ function parsePeriodToDate(period: string): Date {
 }
 
 /**
- * Remove emoji, icons, and non-ASCII characters from category text
+ * Remove emoji, icons, and problematic characters from category text
+ * while preserving apostrophes and common punctuation
  */
 function cleanCategory(raw: string | null | undefined): string {
   if (!raw) return "Uncategorized"
-  // Remove non-ASCII and weird icon characters
-  const noIcons = raw.replace(/[^\x20-\x7E]/g, "")
-  // Remove any characters that are NOT letters, numbers, space, slash, ampersand
-  const cleaned = noIcons.replace(/[^a-zA-Z0-9/& ]+/g, "").trim()
+  // First fix common encoding issues
+  let cleaned = cleanText(raw)
+  // Remove emoji and other special Unicode characters but keep basic punctuation
+  cleaned = cleaned.replace(/[\u{1F300}-\u{1F9FF}]/gu, "") // Remove emoji
+  cleaned = cleaned.replace(/[\u{2600}-\u{26FF}]/gu, "")   // Remove misc symbols
+  // Keep letters, numbers, spaces, and common punctuation (including apostrophe)
+  cleaned = cleaned.replace(/[^a-zA-Z0-9/&' -]+/g, "").trim()
   return cleaned || "Uncategorized"
 }
 
@@ -39,13 +43,37 @@ function cleanCategory(raw: string | null | undefined): string {
  * Clean special characters and fix encoding issues
  */
 function cleanText(text: string): string {
-  // Replace common encoding issues
+  if (!text) return ""
+  
   return text
-    .replace(/â€™/g, "'")  // Fix apostrophe encoding
-    .replace(/â€œ/g, '"')  // Fix opening quote
-    .replace(/â€/g, '"')   // Fix closing quote
-    .replace(/â€"/g, '-')  // Fix em dash
-    .replace(/â€"/g, '-')  // Fix en dash
+    // Fix UTF-8 interpreted as Windows-1252 encoding issues
+    .replace(/â€™/g, "'")   // Fix apostrophe (right single quote)
+    .replace(/â€˜/g, "'")   // Fix left single quote
+    .replace(/â€œ/g, '"')   // Fix left double quote
+    .replace(/â€/g, '"')    // Fix right double quote
+    .replace(/â€"/g, "-")   // Fix em dash
+    .replace(/â€"/g, "-")   // Fix en dash
+    .replace(/Ã¢â‚¬â„¢/g, "'") // Another apostrophe encoding
+    .replace(/Ã¢â‚¬Å"/g, '"')  // Another quote encoding
+    .replace(/Ã¢â‚¬/g, '"')    // Another quote encoding
+    // Fix curly quotes/apostrophes to straight ones
+    .replace(/[\u2018\u2019]/g, "'")  // Curly single quotes to straight
+    .replace(/[\u201C\u201D]/g, '"')  // Curly double quotes to straight
+    .replace(/[\u2013\u2014]/g, "-")  // En/em dash to hyphen
+    // Fix double vertical line and other misencoded apostrophes
+    .replace(/[\u2016]/g, "'")        // Double vertical line to apostrophe
+    .replace(/[\u2015]/g, "-")        // Horizontal bar to hyphen
+    .replace(/[\uFFFD]/g, "'")        // Replacement character to apostrophe (common for corrupted ')
+    // Fix Excel-specific encoding issues
+    .replace(/\u0092/g, "'")          // Windows-1252 right single quote
+    .replace(/\u0091/g, "'")          // Windows-1252 left single quote
+    .replace(/\u0093/g, '"')          // Windows-1252 left double quote
+    .replace(/\u0094/g, '"')          // Windows-1252 right double quote
+    .replace(/\u0096/g, "-")          // Windows-1252 en dash
+    .replace(/\u0097/g, "-")          // Windows-1252 em dash
+    // Additional patterns for corrupted apostrophes
+    .replace(/['`´ʼʻˈˊ]/g, "'")       // Various quote-like characters to straight apostrophe
+    .replace(/[""„‟]/g, '"')          // Various double quote characters
     .trim()
 }
 

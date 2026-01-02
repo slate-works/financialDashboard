@@ -2,6 +2,7 @@ import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
 import transactionRoutes from "./routes/transactions.js"
+import subscriptionRoutes from "./routes/subscriptions.js"
 
 // Load environment variables
 dotenv.config()
@@ -27,6 +28,9 @@ app.get("/api/health", (req, res) => {
 
 // Mount transaction routes
 app.use("/api/transactions", transactionRoutes)
+
+// Mount subscription routes
+app.use("/api/subscriptions", subscriptionRoutes)
 
 // Start server
 app.listen(PORT, () => {

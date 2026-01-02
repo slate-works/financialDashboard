@@ -45,7 +45,7 @@ export function DashboardStats({ transactions, overview }: DashboardStatsProps) 
       title: "Savings Rate",
       value: overview?.savingsRate ?? (fallbackIncome ? (fallbackNet / fallbackIncome) * 100 : 0),
       icon: ShieldCheck,
-      hint: "Target 15–30%",
+      hint: "Target 15-30%",
       tone: "text-primary",
       bg: "bg-primary/10",
       formatter: (val: number) => `${val.toFixed(1)}%`,

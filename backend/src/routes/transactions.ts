@@ -8,6 +8,8 @@ import {
   createManualTransactions,
   getOverviewData,
   deleteAllTransactions,
+  deduplicateTransactions,
+  getFinancialAnalytics,
 } from "../controllers/transactionController.js"
 import multer from "multer"
 
@@ -29,6 +31,9 @@ router.get("/", listTransactions)
 // DELETE /api/transactions - Delete all transactions
 router.delete("/", deleteAllTransactions)
 
+// POST /api/transactions/deduplicate - Remove duplicates and fix encoding
+router.post("/deduplicate", deduplicateTransactions)
+
 // GET /api/transactions/summary/monthly - Get monthly summary
 router.get("/summary/monthly", getMonthlySummaryData)
 
@@ -36,5 +41,8 @@ router.get("/summary/monthly", getMonthlySummaryData)
 router.get("/summary/categories", getCategorySummaryData)
 // GET /api/transactions/summary/overview - KPIs
 router.get("/summary/overview", getOverviewData)
+
+// GET /api/transactions/analytics - Full financial analytics with confidence scoring
+router.get("/analytics", getFinancialAnalytics)
 
 export default router

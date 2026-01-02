@@ -5,8 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { Transaction } from "@/types/transaction"
-import { ArrowDownRight, ArrowUpRight } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, MoreHorizontal, CreditCard } from "lucide-react"
+import { fixTextEncoding } from "@/lib/format"
+import { useData } from "@/lib/data-context"
 
 interface TransactionsTableProps {
   transactions: Transaction[]
@@ -16,12 +25,24 @@ const INITIAL_DISPLAY_COUNT = 10
 
 export function TransactionsTable({ transactions }: TransactionsTableProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT)
+  const { addSubscription } = useData()
   
   const displayedTransactions = transactions.slice(0, displayCount)
   const hasMore = transactions.length > displayCount
   
   const handleShowMore = () => {
     setDisplayCount(prev => Math.min(prev + 10, transactions.length))
+  }
+
+  const handleSetSubscription = async (transaction: Transaction) => {
+    await addSubscription({
+      name: transaction.description,
+      amount: Math.abs(transaction.amount),
+      category: transaction.category,
+      interval: "monthly",
+      startDate: transaction.date,
+      isActive: true,
+    })
   }
   
   return (
@@ -42,12 +63,13 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
                 <TableHead className="font-semibold">Category</TableHead>
                 <TableHead className="font-semibold">Type</TableHead>
                 <TableHead className="text-right font-semibold">Amount</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No transactions found. Upload a CSV file to get started.
                   </TableCell>
                 </TableRow>
@@ -61,10 +83,10 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
                         year: "numeric",
                       })}
                     </TableCell>
-                    <TableCell className="font-medium">{transaction.description}</TableCell>
+                    <TableCell className="font-medium">{fixTextEncoding(transaction.description)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="font-normal">
-                        {transaction.category}
+                        {fixTextEncoding(transaction.category)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -90,6 +112,23 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
                           maximumFractionDigits: 2,
                         })}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleSetSubscription(transaction)}>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Track as Subscription
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))

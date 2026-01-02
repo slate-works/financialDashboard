@@ -10,7 +10,9 @@ import {
   getCategorySummary,
   getOverviewSummary,
   deleteAllTransactions as deleteAllTransactionsService,
+  deduplicateTransactions as deduplicateTransactionsService,
 } from "../services/transactionService.js"
+import { computeFinancialAnalytics } from "../services/financialAnalytics.js"
 
 const transactionPayloadSchema = z.object({
   date: z.union([z.string(), z.date()]).optional(),
@@ -230,5 +232,43 @@ export async function deleteAllTransactions(req: Request, res: Response): Promis
   } catch (error) {
     console.error("Error deleting transactions:", error)
     res.status(500).json({ error: "Failed to delete transactions" })
+  }
+}
+
+/**
+ * POST /api/transactions/deduplicate
+ * Remove duplicate transactions and fix encoding issues
+ */
+export async function deduplicateTransactions(req: Request, res: Response): Promise<void> {
+  try {
+    const result = await deduplicateTransactionsService()
+
+    res.json({
+      success: true,
+      message: `Removed ${result.deleted} duplicates and fixed ${result.fixed} encoding issues`,
+      ...result,
+    })
+  } catch (error) {
+    console.error("Error deduplicating transactions:", error)
+    res.status(500).json({ error: "Failed to deduplicate transactions" })
+  }
+}
+
+/**
+ * GET /api/transactions/analytics
+ * Full financial analytics with confidence scoring and interpretable metrics
+ */
+export async function getFinancialAnalytics(req: Request, res: Response): Promise<void> {
+  try {
+    const months = req.query.months ? parseInt(req.query.months as string, 10) : 6
+    const analytics = await computeFinancialAnalytics({ monthsToAnalyze: months })
+
+    res.json({
+      success: true,
+      analytics,
+    })
+  } catch (error) {
+    console.error("Error computing financial analytics:", error)
+    res.status(500).json({ error: "Failed to compute financial analytics" })
   }
 }
