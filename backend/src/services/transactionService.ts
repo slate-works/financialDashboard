@@ -120,7 +120,7 @@ export async function createManyTransactions(
 
   // Insert transactions one by one to handle duplicates
   for (const transaction of transactions) {
-    const normalized: Omit<Transaction, "id" | "createdAt"> = {
+    const normalized = {
       date: transaction.date instanceof Date ? transaction.date : new Date(transaction.date),
       description: transaction.description,
       category: transaction.category,
@@ -128,12 +128,20 @@ export async function createManyTransactions(
       type: transaction.type,
       account: transaction.account ?? null,
       note: transaction.note ?? null,
+      // Anomaly detection fields - will be populated by detection engine
+      isAnomaly: false,
+      anomalyScore: null,
+      anomalyReason: null,
+      recurringPatternId: null,
     }
 
     const data = normalizeTransactionInput(normalized)
+    
+    // Ensure date is a Date object for toISOString
+    const dateObj = data.date instanceof Date ? data.date : new Date(data.date)
 
     // Create normalized key for duplicate checking
-    const dateStr = data.date.toISOString().split('T')[0]
+    const dateStr = dateObj.toISOString().split('T')[0]
     const normalizedDesc = normalizeForComparison(data.description)
     const key = `${dateStr}|${normalizedDesc}|${data.amount}`
 

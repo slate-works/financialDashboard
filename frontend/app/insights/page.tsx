@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useData } from "@/lib/data-context"
 import { fixTextEncoding } from "@/lib/format"
+import { AnalyticsCards } from "@/components/bento/analytics-cards"
 import {
   BarChart,
   Bar,
@@ -227,6 +228,12 @@ export default function InsightsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
+          {/* Analytics Summary Cards */}
+          <section>
+            <h2 className="text-lg font-semibold mb-4">Financial Health Summary</h2>
+            <AnalyticsCards cashOnHand={10000} />
+          </section>
+
           {/* Row 1: Pie + Bar */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Spending by Category - Pie */}

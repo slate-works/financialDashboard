@@ -3,6 +3,10 @@ import cors from "cors"
 import dotenv from "dotenv"
 import transactionRoutes from "./routes/transactions.js"
 import subscriptionRoutes from "./routes/subscriptions.js"
+import budgetRoutes from "./routes/budgets.js"
+import goalRoutes from "./routes/goals.js"
+import debtRoutes from "./routes/debts.js"
+import analyticsRoutes from "./routes/analytics.js"
 
 // Load environment variables
 dotenv.config()
@@ -26,11 +30,13 @@ app.get("/api/health", (req, res) => {
   })
 })
 
-// Mount transaction routes
+// Mount routes
 app.use("/api/transactions", transactionRoutes)
-
-// Mount subscription routes
 app.use("/api/subscriptions", subscriptionRoutes)
+app.use("/api/budgets", budgetRoutes)
+app.use("/api/goals", goalRoutes)
+app.use("/api/debts", debtRoutes)
+app.use("/api/analytics", analyticsRoutes)
 
 // Start server
 app.listen(PORT, () => {
