@@ -36,10 +36,13 @@ import {
   ReferenceLine,
 } from "recharts"
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value)
+const formatCurrency = (value: number | undefined | null) =>
+  value != null 
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value)
+    : "$0"
 
-const formatPercent = (value: number) => `${value.toFixed(1)}%`
+const formatPercent = (value: number | undefined | null) => 
+  value != null ? `${value.toFixed(1)}%` : "N/A"
 
 const DISCLAIMER = `This simulator is for educational purposes only and does not constitute financial advice. 
 Past performance is not indicative of future results. Actual investment returns may vary significantly 
@@ -249,7 +252,7 @@ export function InvestmentSimulator() {
                   <Target className="h-4 w-4" />
                   Goal Probability
                 </CardDescription>
-                <CardTitle className={`text-2xl ${result.probabilityOfSuccess >= 70 ? "text-emerald-500" : result.probabilityOfSuccess >= 50 ? "text-amber-500" : "text-red-500"}`}>
+                <CardTitle className={`text-2xl ${(result.probabilityOfSuccess ?? 0) >= 70 ? "text-emerald-500" : (result.probabilityOfSuccess ?? 0) >= 50 ? "text-amber-500" : "text-red-500"}`}>
                   {formatPercent(result.probabilityOfSuccess)}
                 </CardTitle>
               </CardHeader>
@@ -390,7 +393,7 @@ export function InvestmentSimulator() {
                             {goalAmount && (
                               <div className="pt-2 border-t">
                                 <p className="text-sm text-muted-foreground">Goal Probability</p>
-                                <p className={`text-xl font-bold ${data.probabilityOfSuccess >= 70 ? "text-emerald-500" : data.probabilityOfSuccess >= 50 ? "text-amber-500" : "text-red-500"}`}>
+                                <p className={`text-xl font-bold ${(data.probabilityOfSuccess ?? 0) >= 70 ? "text-emerald-500" : (data.probabilityOfSuccess ?? 0) >= 50 ? "text-amber-500" : "text-red-500"}`}>
                                   {formatPercent(data.probabilityOfSuccess)}
                                 </p>
                               </div>
