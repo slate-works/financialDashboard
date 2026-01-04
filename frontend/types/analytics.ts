@@ -290,6 +290,8 @@ export interface GoalsAnalysis {
 // ============================================================================
 
 export interface SimulationResult {
+  mean: number
+  stdDev: number
   percentiles: {
     p10: number
     p25: number
@@ -297,15 +299,22 @@ export interface SimulationResult {
     p75: number
     p90: number
   }
-  probabilityOfSuccess: number
-  expectedValue: number
-  projectedPath: Array<{ month: number; median: number; p10: number; p90: number }>
+  confidenceInterval: [number, number]
+  probabilityOfGoal: number | null
+  simulationsRun: number
+  horizonMonths: number
+  assumptions: string
+}
+
+export interface ScenarioComparisonResult {
+  name: string
+  result: SimulationResult
 }
 
 export interface ScenarioComparison {
-  conservative: SimulationResult
-  moderate: SimulationResult
-  aggressive: SimulationResult
+  conservative: ScenarioComparisonResult
+  moderate: ScenarioComparisonResult
+  aggressive: ScenarioComparisonResult
 }
 
 // ============================================================================

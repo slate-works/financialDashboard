@@ -10,30 +10,27 @@ import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
-  LineChart,
   TrendingUp,
   Calculator,
   AlertTriangle,
   Target,
   DollarSign,
   Calendar,
-  Percent,
   RefreshCw,
   BarChart3,
-  ArrowRight,
+  LineChart,
 } from "lucide-react"
 import { compareInvestmentScenarios, runSimulation } from "@/lib/analytics-api"
 import type { SimulationResult, ScenarioComparison } from "@/types/analytics"
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
-  ReferenceLine,
+  Cell,
 } from "recharts"
 
 const formatCurrency = (value: number | undefined | null) =>
@@ -64,6 +61,7 @@ export function InvestmentSimulator() {
     try {
       setIsLoading(true)
       setError(null)
+      setScenarios(null)
       const data = await runSimulation({
         initialValue,
         monthlyContribution,
@@ -73,7 +71,7 @@ export function InvestmentSimulator() {
       setResult(data)
     } catch (err) {
       console.error("Simulation error:", err)
-      setError("Failed to run simulation")
+      setError("Failed to run simulation. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -83,6 +81,7 @@ export function InvestmentSimulator() {
     try {
       setIsLoading(true)
       setError(null)
+      setResult(null)
       const data = await compareInvestmentScenarios({
         initialValue,
         monthlyContribution,
@@ -92,13 +91,26 @@ export function InvestmentSimulator() {
       setScenarios(data)
     } catch (err) {
       console.error("Comparison error:", err)
-      setError("Failed to compare scenarios")
+      setError("Failed to compare scenarios. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }, [initialValue, monthlyContribution, horizonYears, goalAmount])
 
   const totalContributions = initialValue + monthlyContribution * horizonYears * 12
+  
+  // Get median value from result
+  const medianValue = result?.percentiles?.p50 ?? 0
+  const potentialGain = medianValue - totalContributions
+
+  // Build percentiles chart data
+  const percentilesChartData = result ? [
+    { name: "10th", value: result.percentiles?.p10 ?? 0, fill: "hsl(var(--chart-4))" },
+    { name: "25th", value: result.percentiles?.p25 ?? 0, fill: "hsl(var(--chart-3))" },
+    { name: "50th (Median)", value: result.percentiles?.p50 ?? 0, fill: "hsl(var(--primary))" },
+    { name: "75th", value: result.percentiles?.p75 ?? 0, fill: "hsl(var(--chart-2))" },
+    { name: "90th", value: result.percentiles?.p90 ?? 0, fill: "hsl(var(--chart-1))" },
+  ] : []
 
   return (
     <div className="space-y-6">
@@ -236,12 +248,12 @@ export function InvestmentSimulator() {
               <CardHeader className="pb-2">
                 <CardDescription>Expected Value (Median)</CardDescription>
                 <CardTitle className="text-2xl text-emerald-500">
-                  {formatCurrency(result.expectedValue)}
+                  {formatCurrency(medianValue)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-xs text-muted-foreground">
-                  Potential gain: {formatCurrency(result.expectedValue - totalContributions)}
+                  Potential gain: {potentialGain >= 0 ? "+" : ""}{formatCurrency(potentialGain)}
                 </p>
               </CardContent>
             </Card>
@@ -252,8 +264,8 @@ export function InvestmentSimulator() {
                   <Target className="h-4 w-4" />
                   Goal Probability
                 </CardDescription>
-                <CardTitle className={`text-2xl ${(result.probabilityOfSuccess ?? 0) >= 70 ? "text-emerald-500" : (result.probabilityOfSuccess ?? 0) >= 50 ? "text-amber-500" : "text-red-500"}`}>
-                  {formatPercent(result.probabilityOfSuccess)}
+                <CardTitle className={`text-2xl ${(result.probabilityOfGoal ?? 0) >= 70 ? "text-emerald-500" : (result.probabilityOfGoal ?? 0) >= 50 ? "text-amber-500" : "text-red-500"}`}>
+                  {result.probabilityOfGoal != null ? `${result.probabilityOfGoal}%` : "N/A"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -266,165 +278,143 @@ export function InvestmentSimulator() {
         )}
       </div>
 
-      {/* Results */}
-      {(result || scenarios) && (
+      {/* Single Simulation Results */}
+      {result && (
         <Card>
           <CardHeader>
             <CardTitle>Simulation Results</CardTitle>
             <CardDescription>
-              Based on 1,000 Monte Carlo simulations using historical market returns
+              Based on {result.simulationsRun?.toLocaleString() ?? "1,000"} Monte Carlo simulations
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={result ? "projection" : "comparison"}>
+            <Tabs defaultValue="percentiles">
               <TabsList>
-                {result && <TabsTrigger value="projection">Projection</TabsTrigger>}
-                {scenarios && <TabsTrigger value="comparison">Scenario Comparison</TabsTrigger>}
-                {result && <TabsTrigger value="percentiles">Percentiles</TabsTrigger>}
+                <TabsTrigger value="percentiles">Percentiles</TabsTrigger>
+                <TabsTrigger value="details">Details</TabsTrigger>
               </TabsList>
 
-              {result && (
-                <TabsContent value="projection" className="mt-4">
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={result.projectedPath}>
-                        <defs>
-                          <linearGradient id="colorMedian" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                        <XAxis
-                          dataKey="month"
-                          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                          tickFormatter={(val) => `Y${Math.floor(val / 12)}`}
-                        />
-                        <YAxis
-                          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                          tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
-                        />
-                        <Tooltip
-                          formatter={(value: number) => formatCurrency(value)}
-                          labelFormatter={(label) => `Month ${label} (Year ${Math.floor(label / 12)})`}
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "0.5rem",
-                          }}
-                        />
-                        <Legend />
-                        <Area
-                          type="monotone"
-                          dataKey="p90"
-                          stroke="hsl(var(--chart-2))"
-                          strokeWidth={1}
-                          fill="none"
-                          name="90th Percentile"
-                          strokeDasharray="5 5"
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="median"
-                          stroke="hsl(var(--primary))"
-                          strokeWidth={2}
-                          fill="url(#colorMedian)"
-                          name="Median"
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="p10"
-                          stroke="hsl(var(--chart-4))"
-                          strokeWidth={1}
-                          fill="none"
-                          name="10th Percentile"
-                          strokeDasharray="5 5"
-                        />
-                        {goalAmount && (
-                          <ReferenceLine
-                            y={goalAmount}
-                            stroke="hsl(var(--destructive))"
-                            strokeDasharray="3 3"
-                            label={{ value: "Goal", fill: "hsl(var(--destructive))", fontSize: 12 }}
-                          />
-                        )}
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </TabsContent>
-              )}
+              <TabsContent value="percentiles" className="mt-4">
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={percentilesChartData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                      <XAxis 
+                        type="number" 
+                        tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={100}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      />
+                      <Tooltip
+                        formatter={(value: number) => formatCurrency(value)}
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "0.5rem",
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {percentilesChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                  The 50th percentile (median) means there's a 50% chance your actual result will be higher or lower.
+                </p>
+              </TabsContent>
 
-              {scenarios && (
-                <TabsContent value="comparison" className="mt-4">
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {(["conservative", "moderate", "aggressive"] as const).map((scenario) => {
-                      const data = scenarios[scenario]
-                      const color = scenario === "conservative" 
-                        ? "text-blue-500" 
-                        : scenario === "moderate" 
-                        ? "text-emerald-500" 
-                        : "text-amber-500"
-                      
-                      return (
-                        <Card key={scenario}>
-                          <CardHeader className="pb-2">
-                            <CardTitle className={`text-lg capitalize ${color}`}>{scenario}</CardTitle>
-                            <CardDescription>
-                              {scenario === "conservative" && "Bonds & stable assets"}
-                              {scenario === "moderate" && "Balanced portfolio"}
-                              {scenario === "aggressive" && "Stocks & growth"}
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div>
-                              <p className="text-sm text-muted-foreground">Expected Value</p>
-                              <p className="text-2xl font-bold">{formatCurrency(data.expectedValue)}</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">10th %ile</p>
-                                <p className="font-medium">{formatCurrency(data.percentiles.p10)}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">90th %ile</p>
-                                <p className="font-medium">{formatCurrency(data.percentiles.p90)}</p>
-                              </div>
-                            </div>
-                            {goalAmount && (
-                              <div className="pt-2 border-t">
-                                <p className="text-sm text-muted-foreground">Goal Probability</p>
-                                <p className={`text-xl font-bold ${(data.probabilityOfSuccess ?? 0) >= 70 ? "text-emerald-500" : (data.probabilityOfSuccess ?? 0) >= 50 ? "text-amber-500" : "text-red-500"}`}>
-                                  {formatPercent(data.probabilityOfSuccess)}
-                                </p>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      )
-                    })}
+              <TabsContent value="details" className="mt-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">Mean (Average)</p>
+                    <p className="text-xl font-bold">{formatCurrency(result.mean)}</p>
                   </div>
-                </TabsContent>
-              )}
-
-              {result && (
-                <TabsContent value="percentiles" className="mt-4">
-                  <div className="grid gap-4 md:grid-cols-5">
-                    {Object.entries(result.percentiles).map(([key, value]) => (
-                      <Card key={key}>
-                        <CardHeader className="pb-2">
-                          <CardDescription>{key.replace("p", "")}th Percentile</CardDescription>
-                          <CardTitle className="text-xl">{formatCurrency(value)}</CardTitle>
-                        </CardHeader>
-                      </Card>
-                    ))}
+                  <div className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">Standard Deviation</p>
+                    <p className="text-xl font-bold">{formatCurrency(result.stdDev)}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    The 50th percentile (median) represents the middle outcome - there's a 50% chance 
-                    your actual result will be higher or lower than this value.
+                  <div className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">90% Confidence Range</p>
+                    <p className="text-xl font-bold">
+                      {formatCurrency(result.confidenceInterval?.[0])} - {formatCurrency(result.confidenceInterval?.[1])}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Assumptions:</strong> {result.assumptions}
                   </p>
-                </TabsContent>
-              )}
+                </div>
+              </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Scenario Comparison Results */}
+      {scenarios && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Scenario Comparison</CardTitle>
+            <CardDescription>
+              Compare conservative, moderate, and aggressive investment strategies
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              {(["conservative", "moderate", "aggressive"] as const).map((scenario) => {
+                const data = scenarios[scenario]
+                if (!data?.result) return null
+                
+                const res = data.result
+                const color = scenario === "conservative" 
+                  ? "text-blue-500" 
+                  : scenario === "moderate" 
+                  ? "text-emerald-500" 
+                  : "text-amber-500"
+                
+                return (
+                  <Card key={scenario}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className={`text-lg capitalize ${color}`}>{scenario}</CardTitle>
+                      <CardDescription className="text-xs">{data.name}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Median Value</p>
+                        <p className="text-2xl font-bold">{formatCurrency(res.percentiles?.p50)}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">10th %ile</p>
+                          <p className="font-medium">{formatCurrency(res.percentiles?.p10)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">90th %ile</p>
+                          <p className="font-medium">{formatCurrency(res.percentiles?.p90)}</p>
+                        </div>
+                      </div>
+                      {goalAmount && res.probabilityOfGoal != null && (
+                        <div className="pt-2 border-t">
+                          <p className="text-sm text-muted-foreground">Goal Probability</p>
+                          <p className={`text-xl font-bold ${res.probabilityOfGoal >= 70 ? "text-emerald-500" : res.probabilityOfGoal >= 50 ? "text-amber-500" : "text-red-500"}`}>
+                            {res.probabilityOfGoal}%
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
           </CardContent>
         </Card>
       )}
