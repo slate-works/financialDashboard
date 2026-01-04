@@ -1,6 +1,7 @@
 # Personal Finance Dashboard
 
 A self-hosted, offline-first personal finance dashboard with research-driven analytics. Part of the Slate Works organization.
+<img width="500" height="450" alt="image" src="https://github.com/user-attachments/assets/d4e9cf74-c996-436c-863c-05e7f5e0e18e" />
 
 ## Status
 
