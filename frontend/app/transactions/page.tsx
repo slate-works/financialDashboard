@@ -241,20 +241,20 @@ export default function TransactionsPage() {
       </PageHeader>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         <Card className="bg-success/5 border-success/20">
           <CardContent className="py-4">
             <p className="text-xs font-medium text-muted-foreground sm:text-sm">Income</p>
-            <p className="text-lg font-semibold text-success sm:text-xl tabular-nums">
-              +{formatCurrency(totals.income)}
+            <p className="text-xl font-semibold text-success sm:text-xl tabular-nums whitespace-nowrap tracking-tight leading-none">
+              {formatCurrency(totals.income)}
             </p>
           </CardContent>
         </Card>
         <Card className="bg-destructive/5 border-destructive/20">
           <CardContent className="py-4">
             <p className="text-xs font-medium text-muted-foreground sm:text-sm">Expenses</p>
-            <p className="text-lg font-semibold text-destructive sm:text-xl tabular-nums">
-              -{formatCurrency(totals.expenses)}
+            <p className="text-xl font-semibold text-destructive sm:text-xl tabular-nums whitespace-nowrap tracking-tight leading-none">
+              {formatCurrency(totals.expenses)}
             </p>
           </CardContent>
         </Card>
@@ -262,11 +262,11 @@ export default function TransactionsPage() {
           <CardContent className="py-4">
             <p className="text-xs font-medium text-muted-foreground sm:text-sm">Net</p>
             <p
-              className={`text-lg font-semibold sm:text-xl tabular-nums ${
+              className={`text-xl font-semibold sm:text-xl tabular-nums whitespace-nowrap tracking-tight leading-none ${
                 totals.net >= 0 ? "text-success" : "text-destructive"
               }`}
             >
-              {totals.net >= 0 ? "+" : "-"}{formatCurrency(Math.abs(totals.net))}
+              {formatCurrency(Math.abs(totals.net))}
             </p>
           </CardContent>
         </Card>
