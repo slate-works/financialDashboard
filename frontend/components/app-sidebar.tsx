@@ -50,7 +50,8 @@ export function AppSidebar() {
   return (
     <>
       {/* Mobile header bar */}
-      <header className="fixed inset-x-0 top-0 z-50 h-[calc(3.5rem+env(safe-area-inset-top))] border-b border-border bg-background pt-[env(safe-area-inset-top)] lg:hidden">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background lg:hidden">
+        <div className="h-[env(safe-area-inset-top)]" />
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
