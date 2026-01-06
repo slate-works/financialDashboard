@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -13,16 +13,17 @@ const inter = Inter({
   display: "swap",
 })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
+}
+
 export const metadata: Metadata = {
   title: 'Finance Dashboard',
   description: 'Personal finance tracking and analytics dashboard',
   generator: 'v0.app',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    viewportFit: 'cover',
-  },
   icons: {
     icon: [
       {
@@ -49,7 +50,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${inter.className} font-sans antialiased overflow-x-hidden`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -57,21 +58,19 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <DataProvider>
-            <div className="fixed inset-0 overflow-hidden bg-background">
+            <div className="relative min-h-screen bg-background">
               {/* Background texture */}
               <div className="texture-overlay" aria-hidden="true" />
               
-              <div className="flex h-full flex-col overflow-hidden">
-                {/* Sidebar navigation */}
-                <AppSidebar />
-                
-                {/* Main content area */}
-                <main className="flex-1 overflow-y-auto lg:pl-64">
-                  <div className="page-container py-6 lg:py-8">
-                    {children}
-                  </div>
-                </main>
-              </div>
+              {/* Sidebar navigation */}
+              <AppSidebar />
+              
+              {/* Main content area */}
+              <main className="lg:pl-64">
+                <div className="page-container py-6 lg:py-8">
+                  {children}
+                </div>
+              </main>
             </div>
             <Toaster />
           </DataProvider>
