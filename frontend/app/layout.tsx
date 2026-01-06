@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   title: 'Finance Dashboard',
   description: 'Personal finance tracking and analytics dashboard',
   generator: 'v0.app',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    viewportFit: 'cover',
+  },
   icons: {
     icon: [
       {
@@ -51,19 +57,21 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <DataProvider>
-            <div className="relative min-h-screen bg-background">
+            <div className="fixed inset-0 overflow-hidden bg-background">
               {/* Background texture */}
               <div className="texture-overlay" aria-hidden="true" />
               
-              {/* Sidebar navigation */}
-              <AppSidebar />
-              
-              {/* Main content area */}
-              <main className="min-h-screen pt-14 lg:pl-64 lg:pt-0">
-                <div className="page-container py-6 lg:py-8">
-                  {children}
-                </div>
-              </main>
+              <div className="flex h-full flex-col overflow-hidden">
+                {/* Sidebar navigation */}
+                <AppSidebar />
+                
+                {/* Main content area */}
+                <main className="flex-1 overflow-y-auto lg:pl-64">
+                  <div className="page-container py-6 lg:py-8">
+                    {children}
+                  </div>
+                </main>
+              </div>
             </div>
             <Toaster />
           </DataProvider>
