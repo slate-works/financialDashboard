@@ -66,7 +66,7 @@ export default function RootLayout({
               <AppSidebar />
               
               {/* Main content area */}
-              <main className="lg:pl-64">
+              <main className="pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pl-64 lg:pt-0">
                 <div className="page-container py-6 lg:py-8">
                   {children}
                 </div>
