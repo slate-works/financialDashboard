@@ -79,6 +79,10 @@ export async function createTransaction(req: Request, res: Response): Promise<vo
       type: payload.type,
       account: payload.account ?? null,
       note: payload.note ?? null,
+      isAnomaly: false,
+      anomalyScore: null,
+      anomalyReason: null,
+      recurringPatternId: null,
     })
 
     res.status(201).json({ success: true, transaction: created })

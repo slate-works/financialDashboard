@@ -50,25 +50,28 @@ export function AppSidebar() {
   return (
     <>
       {/* Mobile header bar */}
-      <header className="fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background px-4 lg:hidden">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Wallet className="size-5" />
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background lg:hidden">
+        <div className="h-[env(safe-area-inset-top)]" />
+        <div className="flex h-14 items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Wallet className="size-5" />
+            </div>
+            <span className="font-semibold text-foreground">Finance</span>
           </div>
-          <span className="font-semibold text-foreground">Finance</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeSwitch />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-9"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isMobileMenuOpen}
-          >
-            {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeSwitch />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-9"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </Button>
+          </div>
         </div>
       </header>
 

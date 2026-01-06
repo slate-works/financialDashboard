@@ -20,6 +20,15 @@ model Transaction {
   account     String?
   note        String?
   createdAt   DateTime @default(now())
+  
+  // Anomaly detection flags
+  isAnomaly     Boolean @default(false)
+  anomalyScore  Float?
+  anomalyReason String?
+  
+  // Link to detected recurring pattern
+  recurringPatternId Int?
+  recurringPattern   RecurringPattern? @relation(fields: [recurringPatternId], references: [id])
 }
 
 model Subscription {
@@ -32,4 +41,145 @@ model Subscription {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ============================================================================
+// BUDGET TRACKING (Feature #1)
+// ============================================================================
+
+model Budget {
+  id        Int      @id @default(autoincrement())
+  category  String
+  amount    Float    // Budget limit for this category
+  period    String   @default("monthly") // monthly, annual
+  startDate DateTime @default(now())
+  endDate   DateTime?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, period, startDate])
+}
+
+// ============================================================================
+// RECURRING PATTERN DETECTION (Feature #2)
+// ============================================================================
+
+model RecurringPattern {
+  id                 Int      @id @default(autoincrement())
+  merchant           String
+  category           String
+  avgAmount          Float
+  period             String   // Weekly, Bi-weekly, Monthly, Quarterly, Annual
+  confidence         Float    // 0-100%
+  status             String   @default("Unconfirmed") // Confirmed, Unconfirmed, Archived
+  lastOccurrenceDate DateTime
+  nextExpectedDate   DateTime
+  occurrences        Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Transactions linked to this pattern
+  transactions Transaction[]
+
+  @@unique([merchant, category])
+}
+
+// ============================================================================
+// FINANCIAL GOALS (Feature #7)
+// ============================================================================
+
+model Goal {
+  id            Int       @id @default(autoincrement())
+  name          String
+  description   String?
+  targetAmount  Float
+  currentSaved  Float     @default(0)
+  targetDate    DateTime
+  priority      Int       @default(1) // 1 = highest priority
+  category      String?   // Vacation, Home, Retirement, Education, etc.
+  status        String    @default("active") // active, completed, archived
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  completedAt   DateTime?
+}
+
+// ============================================================================
+// DEBT MANAGEMENT (Feature #8)
+// ============================================================================
+
+model Debt {
+  id                  Int      @id @default(autoincrement())
+  name                String
+  principalAmount     Float    // Original loan amount
+  currentBalance      Float    // Current outstanding balance
+  annualInterestRate  Float    // APR as percentage (e.g., 18.99)
+  minMonthlyPayment   Float
+  dueDayOfMonth       Int      // Day of month payment is due (1-31)
+  paymentMethod       String?  // Auto-pay, Manual, etc.
+  status              String   @default("active") // active, paid_off, deferred
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ============================================================================
+// EMERGENCY FUND CONFIGURATION (Feature #12)
+// ============================================================================
+
+model EmergencyFundConfig {
+  id                      Int      @id @default(autoincrement())
+  incomeStability         String   // stable, variable, high_variable
+  monthlyEssentialExpenses Float
+  dependents              Int      @default(0)
+  healthRisk              String   @default("normal") // normal, elevated, high
+  jobStabilityYears       Float    @default(0)
+  hasPartnerIncome        Boolean  @default(false)
+  recommendedMonths       Float
+  recommendedAmount       Float
+  currentBalance          Float    @default(0)
+  status                  String   // below_target, adequate, above_target
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+// ============================================================================
+// MONTHLY SNAPSHOTS (Historical Metrics Cache)
+// ============================================================================
+
+model MonthlySnapshot {
+  id               Int      @id @default(autoincrement())
+  month            DateTime // First day of the month
+  totalIncome      Float
+  totalExpenses    Float
+  netCashFlow      Float
+  savingsRate      Float    // Percentage
+  budgetAdherence  Float    // Percentage
+  cashRunwayMonths Float?
+  
+  // Stability metrics
+  incomeStability    Float? // 0-100
+  expenseVolatility  Float? // CV as percentage
+  
+  // Category breakdown (stored as JSON string)
+  categoryBreakdown String?
+  
+  createdAt DateTime @default(now())
+
+  @@unique([month])
+}
+
+// ============================================================================
+// PORTFOLIO HOLDINGS (Feature #11 - Investment Simulator)
+// ============================================================================
+
+model PortfolioHolding {
+  id            Int      @id @default(autoincrement())
+  ticker        String
+  shares        Float
+  purchasePrice Float
+  currentPrice  Float?
+  purchaseDate  DateTime
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

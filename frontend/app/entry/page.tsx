@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useData } from "@/lib/data-context"
+import { createId } from "@/lib/id"
 import { useToast } from "@/hooks/use-toast"
 
 type ManualRow = {
@@ -78,7 +79,7 @@ const TRANSFER_CATEGORIES = [
 
 function createEmptyRow(): ManualRow {
   return {
-    id: crypto.randomUUID(),
+    id: createId("row"),
     date: format(new Date(), "yyyy-MM-dd"),
     description: "",
     category: "",
@@ -235,7 +236,7 @@ export default function ManualEntryPage() {
     const parsed = lines.map((line) => {
       const cells = line.split(/\t|,/).map((cell) => cell.trim())
       return {
-        id: crypto.randomUUID(),
+        id: createId("paste"),
         date: cells[0] || format(new Date(), "yyyy-MM-dd"),
         description: cells[1] || "Pasted item",
         category: cells[2] || "Uncategorized",
@@ -313,11 +314,12 @@ export default function ManualEntryPage() {
                   <Label htmlFor="quick-type">Type</Label>
                   <Select
                     value={quickEntry.type}
-                    onValueChange={(value: ManualRow["type"]) => {
-                      const newCategories = getCategoriesForType(value)
+                    onValueChange={(value) => {
+                      const nextType = value as ManualRow["type"]
+                      const newCategories = getCategoriesForType(nextType)
                       setQuickEntry((prev) => ({
                         ...prev,
-                        type: value,
+                        type: nextType,
                         // Reset category if it doesn't exist in new type's categories
                         category: newCategories.includes(prev.category) ? prev.category : ""
                       }))
@@ -546,9 +548,10 @@ function EntryRow({ row, index, onChange, onRemove, canRemove, getCategoriesForT
   const categories = getCategoriesForType(row.type)
   
   // Reset category if current selection doesn't exist in new type's categories
-  const handleTypeChange = (newType: ManualRow["type"]) => {
-    onChange(row.id, "type", newType)
-    const newCategories = getCategoriesForType(newType)
+  const handleTypeChange = (value: string) => {
+    const nextType = value as ManualRow["type"]
+    onChange(row.id, "type", nextType)
+    const newCategories = getCategoriesForType(nextType)
     if (row.category && !newCategories.includes(row.category)) {
       onChange(row.id, "category", "")
     }

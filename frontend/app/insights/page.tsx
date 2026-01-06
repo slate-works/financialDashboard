@@ -4,6 +4,8 @@ import { useState, useMemo } from "react"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -11,10 +13,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  PiggyBank,
+  ShieldAlert,
+  RefreshCw,
+  Shield,
+  TrendingUp,
+  Lightbulb,
+  BarChart3,
+} from "lucide-react"
 import { useData } from "@/lib/data-context"
 import { fixTextEncoding } from "@/lib/format"
+import { AnalyticsCards } from "@/components/bento/analytics-cards"
+import {
+  SavingsMetrics,
+  AnomalyAlerts,
+  EmergencyFundCalculator,
+  ActionableInsights,
+  RecurringExpenses,
+  InvestmentSimulator,
+} from "@/components/analytics"
 import {
   BarChart,
   Bar,
@@ -47,6 +68,7 @@ export default function InsightsPage() {
   const { transactions, isLoading } = useData()
   const [selectedCategory, setSelectedCategory] = useState<string>("")
   const [calendarMonth, setCalendarMonth] = useState(() => new Date())
+  const [activeTab, setActiveTab] = useState("overview")
 
   // Spending by category
   const categoryChartData = useMemo(() => {
@@ -213,8 +235,8 @@ export default function InsightsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Insights"
-        description="Visualize your spending patterns and trends"
+        title="Financial Insights"
+        description="Comprehensive analysis of your financial health"
       />
 
       {transactions.length === 0 ? (
@@ -226,34 +248,196 @@ export default function InsightsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* Row 1: Pie + Bar */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* Spending by Category - Pie */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+            <TabsTrigger value="overview" className="flex items-center gap-1">
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="savings" className="flex items-center gap-1">
+              <PiggyBank className="h-4 w-4" />
+              <span className="hidden sm:inline">Savings</span>
+            </TabsTrigger>
+            <TabsTrigger value="recurring" className="flex items-center gap-1">
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">Recurring</span>
+            </TabsTrigger>
+            <TabsTrigger value="anomalies" className="flex items-center gap-1">
+              <ShieldAlert className="h-4 w-4" />
+              <span className="hidden sm:inline">Alerts</span>
+            </TabsTrigger>
+            <TabsTrigger value="emergency" className="flex items-center gap-1">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Emergency</span>
+            </TabsTrigger>
+            <TabsTrigger value="invest" className="flex items-center gap-1">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Invest</span>
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="flex items-center gap-1">
+              <Lightbulb className="h-4 w-4" />
+              <span className="hidden sm:inline">Insights</span>
+            </TabsTrigger>
+            <TabsTrigger value="charts" className="flex items-center gap-1">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Charts</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <section>
+              <h2 className="text-lg font-semibold mb-4">Financial Health Summary</h2>
+              <AnalyticsCards cashOnHand={10000} />
+            </section>
+
+            {/* Quick Charts */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Spending by Category - Pie */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Spending by Category</CardTitle>
+                  <CardDescription>Distribution of your expenses</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryChartData.slice(0, 6)}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {categoryChartData.slice(0, 6).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: number) => `$${value.toFixed(2)}`}
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "0.5rem",
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-2 mt-2">
+                    {categoryChartData.slice(0, 6).map((item) => (
+                      <div key={item.name} className="flex items-center gap-1 text-xs">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="truncate max-w-[80px]">{item.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Income vs Expenses */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Income vs Expenses</CardTitle>
+                  <CardDescription>Monthly comparison</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={monthlyChartData.slice(-6)}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="hsl(var(--border))"
+                          opacity={0.3}
+                        />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                        />
+                        <YAxis
+                          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                          tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                        />
+                        <Tooltip
+                          formatter={(value: number) => `$${value.toFixed(2)}`}
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "0.5rem",
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="income" fill="hsl(var(--success))" name="Income" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="expenses" fill="hsl(var(--destructive))" name="Expenses" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Savings Tab */}
+          <TabsContent value="savings" className="space-y-6">
+            <SavingsMetrics />
+          </TabsContent>
+
+          {/* Recurring Tab */}
+          <TabsContent value="recurring" className="space-y-6">
+            <RecurringExpenses />
+          </TabsContent>
+
+          {/* Anomalies Tab */}
+          <TabsContent value="anomalies" className="space-y-6">
+            <AnomalyAlerts />
+          </TabsContent>
+
+          {/* Emergency Fund Tab */}
+          <TabsContent value="emergency" className="space-y-6">
+            <EmergencyFundCalculator />
+          </TabsContent>
+
+          {/* Investment Tab */}
+          <TabsContent value="invest" className="space-y-6">
+            <InvestmentSimulator />
+          </TabsContent>
+
+          {/* Insights Tab */}
+          <TabsContent value="insights" className="space-y-6">
+            <ActionableInsights />
+          </TabsContent>
+
+          {/* Detailed Charts Tab */}
+          <TabsContent value="charts" className="space-y-6">
+            {/* Net Cash Flow Trend */}
             <Card>
               <CardHeader>
-                <CardTitle>Spending by Category</CardTitle>
-                <CardDescription>Distribution of your expenses</CardDescription>
+                <CardTitle>Net Cash Flow Trend</CardTitle>
+                <CardDescription>Monthly net cash flow (income - expenses)</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={categoryChartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) =>
-                          `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
-                        }
-                        outerRadius={100}
-                        dataKey="value"
-                      >
-                        {categoryChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
+                    <LineChart data={monthlyChartData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                        opacity={0.3}
+                      />
+                      <XAxis
+                        dataKey="month"
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      />
+                      <YAxis
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                        tickFormatter={(val) => `$${(val / 1000).toFixed(1)}k`}
+                      />
                       <Tooltip
                         formatter={(value: number) => `$${value.toFixed(2)}`}
                         contentStyle={{
@@ -262,8 +446,179 @@ export default function InsightsPage() {
                           borderRadius: "0.5rem",
                         }}
                       />
-                    </PieChart>
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="net"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={3}
+                        name="Net Cash Flow"
+                        dot={{ r: 4, fill: "hsl(var(--primary))" }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
                   </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Category Trend */}
+            <Card>
+              <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>Category Trend Over Time</CardTitle>
+                  <CardDescription>Monthly spending for selected category</CardDescription>
+                </div>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allCategories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  {selectedCategory && categoryTrendData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={categoryTrendData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="hsl(var(--border))"
+                          opacity={0.3}
+                        />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                        />
+                        <YAxis
+                          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                        />
+                        <Tooltip
+                          formatter={(value: number) => `$${value.toFixed(2)}`}
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "0.5rem",
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="amount"
+                          stroke="hsl(var(--chart-5))"
+                          strokeWidth={3}
+                          dot={{ r: 4, fill: "hsl(var(--chart-5))" }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      {selectedCategory ? "No data for this category" : "Select a category to view trend"}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Daily Activity Calendar */}
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle>Daily Activity Calendar</CardTitle>
+                    <CardDescription>Daily income and expenses at a glance</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        setCalendarMonth(
+                          new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
+                        )
+                      }
+                    >
+                      <ChevronLeft className="size-4" />
+                    </Button>
+                    <div className="min-w-32 text-center font-semibold">{monthYearDisplay}</div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        setCalendarMonth(
+                          new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+                        )
+                      }
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-4 text-xs sm:text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-3 rounded-sm bg-success" />
+                    <span>Net positive (&gt;$100)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-3 rounded-sm bg-destructive" />
+                    <span>Net negative (&gt;$100)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-3 rounded-sm bg-muted-foreground" />
+                    <span>Low activity</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Day headers */}
+                <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground sm:gap-2">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                    <div key={day}>{day}</div>
+                  ))}
+                </div>
+
+                {/* Calendar grid */}
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                  {dailySpendingCalendar.map((cell, index) => {
+                    if (cell.day === 0) {
+                      return <div key={index} className="aspect-square" />
+                    }
+
+                    const hasActivity = cell.data && (cell.data.income > 0 || cell.data.expenses > 0)
+                    const net = cell.data?.net ?? 0
+
+                    let bgColor = "bg-muted/50"
+                    if (hasActivity) {
+                      if (net > 100) bgColor = "bg-success"
+                      else if (net < -100) bgColor = "bg-destructive"
+                      else bgColor = "bg-muted-foreground"
+                    }
+
+                    return (
+                      <div
+                        key={index}
+                        className={`flex aspect-square flex-col items-center justify-center rounded text-xs sm:text-sm ${bgColor} ${
+                          hasActivity ? "text-white" : "text-foreground"
+                        }`}
+                        title={
+                          cell.data
+                            ? `${cell.date}: $${cell.data.income.toFixed(2)} in, $${cell.data.expenses.toFixed(2)} out`
+                            : cell.date
+                        }
+                      >
+                        <span className="font-semibold">{cell.day}</span>
+                        {hasActivity && Math.abs(net) >= 10 && (
+                          <span className="text-[10px]">${Math.abs(net).toFixed(0)}</span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -277,23 +632,22 @@ export default function InsightsPage() {
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={categoryChartData.slice(0, 6)}>
+                    <BarChart data={categoryChartData.slice(0, 10)} layout="vertical">
                       <CartesianGrid
                         strokeDasharray="3 3"
                         stroke="hsl(var(--border))"
                         opacity={0.3}
                       />
                       <XAxis
-                        dataKey="name"
-                        tick={{
-                          fill: "hsl(var(--muted-foreground))",
-                          fontSize: 12,
-                        }}
-                        tickLine={{ stroke: "hsl(var(--border))" }}
+                        type="number"
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                        tickFormatter={(val) => `$${(val / 1000).toFixed(1)}k`}
                       />
                       <YAxis
-                        tick={{ fill: "hsl(var(--muted-foreground))" }}
-                        tickLine={{ stroke: "hsl(var(--border))" }}
+                        type="category"
+                        dataKey="name"
+                        width={100}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                       />
                       <Tooltip
                         formatter={(value: number) => `$${value.toFixed(2)}`}
@@ -303,8 +657,8 @@ export default function InsightsPage() {
                           borderRadius: "0.5rem",
                         }}
                       />
-                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                        {categoryChartData.slice(0, 6).map((entry, index) => (
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {categoryChartData.slice(0, 10).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
@@ -313,299 +667,8 @@ export default function InsightsPage() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Row 2: Income vs Expenses */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Income vs Expenses Over Time</CardTitle>
-              <CardDescription>
-                Monthly comparison of income and expenses
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyChartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                      opacity={0.3}
-                    />
-                    <XAxis
-                      dataKey="month"
-                      tick={{
-                        fill: "hsl(var(--muted-foreground))",
-                        fontSize: 12,
-                      }}
-                      tickLine={{ stroke: "hsl(var(--border))" }}
-                    />
-                    <YAxis
-                      tick={{ fill: "hsl(var(--muted-foreground))" }}
-                      tickLine={{ stroke: "hsl(var(--border))" }}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => `$${value.toFixed(2)}`}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="income"
-                      fill="hsl(var(--success))"
-                      name="Income"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="expenses"
-                      fill="hsl(var(--destructive))"
-                      name="Expenses"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Row 3: Net Cash Flow Trend */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Net Cash Flow Trend</CardTitle>
-              <CardDescription>
-                Monthly net cash flow (income - expenses)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyChartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                      opacity={0.3}
-                    />
-                    <XAxis
-                      dataKey="month"
-                      tick={{
-                        fill: "hsl(var(--muted-foreground))",
-                        fontSize: 12,
-                      }}
-                      tickLine={{ stroke: "hsl(var(--border))" }}
-                    />
-                    <YAxis
-                      tick={{ fill: "hsl(var(--muted-foreground))" }}
-                      tickLine={{ stroke: "hsl(var(--border))" }}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => `$${value.toFixed(2)}`}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="net"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      name="Net Cash Flow"
-                      dot={{ r: 4, fill: "hsl(var(--primary))" }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Row 4: Category Trend */}
-          <Card>
-            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle>Category Trend Over Time</CardTitle>
-                <CardDescription>
-                  Monthly spending for selected category
-                </CardDescription>
-              </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                {selectedCategory && categoryTrendData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={categoryTrendData}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="hsl(var(--border))"
-                        opacity={0.3}
-                      />
-                      <XAxis
-                        dataKey="month"
-                        tick={{
-                          fill: "hsl(var(--muted-foreground))",
-                          fontSize: 12,
-                        }}
-                        tickLine={{ stroke: "hsl(var(--border))" }}
-                      />
-                      <YAxis
-                        tick={{ fill: "hsl(var(--muted-foreground))" }}
-                        tickLine={{ stroke: "hsl(var(--border))" }}
-                      />
-                      <Tooltip
-                        formatter={(value: number) => `$${value.toFixed(2)}`}
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "0.5rem",
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="amount"
-                        stroke="hsl(var(--chart-5))"
-                        strokeWidth={3}
-                        dot={{ r: 4, fill: "hsl(var(--chart-5))" }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-muted-foreground">
-                    {selectedCategory
-                      ? "No data for this category"
-                      : "Select a category to view trend"}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Row 5: Daily Activity Calendar */}
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <CardTitle>Daily Activity Calendar</CardTitle>
-                  <CardDescription>
-                    Daily income and expenses at a glance
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      setCalendarMonth(
-                        new Date(
-                          calendarMonth.getFullYear(),
-                          calendarMonth.getMonth() - 1,
-                          1
-                        )
-                      )
-                    }
-                  >
-                    <ChevronLeft className="size-4" />
-                  </Button>
-                  <div className="min-w-32 text-center font-semibold">
-                    {monthYearDisplay}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      setCalendarMonth(
-                        new Date(
-                          calendarMonth.getFullYear(),
-                          calendarMonth.getMonth() + 1,
-                          1
-                        )
-                      )
-                    }
-                  >
-                    <ChevronRight className="size-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-4 text-xs sm:text-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="size-3 rounded-sm bg-success" />
-                  <span>Net positive (&gt;$100)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="size-3 rounded-sm bg-destructive" />
-                  <span>Net negative (&gt;$100)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="size-3 rounded-sm bg-muted-foreground" />
-                  <span>Low activity</span>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Day headers */}
-              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground sm:gap-2">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div key={day}>{day}</div>
-                ))}
-              </div>
-
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                {dailySpendingCalendar.map((cell, index) => {
-                  if (cell.day === 0) {
-                    return <div key={index} className="aspect-square" />
-                  }
-
-                  const hasActivity = cell.data && (cell.data.income > 0 || cell.data.expenses > 0)
-                  const net = cell.data?.net ?? 0
-                  
-                  let bgColor = "bg-muted/50"
-                  if (hasActivity) {
-                    if (net > 100) bgColor = "bg-success"
-                    else if (net < -100) bgColor = "bg-destructive"
-                    else bgColor = "bg-muted-foreground"
-                  }
-
-                  return (
-                    <div
-                      key={index}
-                      className={`flex aspect-square flex-col items-center justify-center rounded text-xs sm:text-sm ${bgColor} ${
-                        hasActivity ? "text-white" : "text-foreground"
-                      }`}
-                      title={
-                        cell.data
-                          ? `${cell.date}: $${cell.data.income.toFixed(2)} in, $${cell.data.expenses.toFixed(2)} out`
-                          : cell.date
-                      }
-                    >
-                      <span className="font-semibold">{cell.day}</span>
-                      {hasActivity && Math.abs(net) >= 10 && (
-                        <span className="text-[10px]">${Math.abs(net).toFixed(0)}</span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   )
@@ -615,16 +678,17 @@ function InsightsSkeleton() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-5 w-64" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-5 w-80" />
       </div>
+      <Skeleton className="h-10 w-full" />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-48" />
           </CardHeader>
           <CardContent>
-            <Skeleton className="h-80 w-full" />
+            <Skeleton className="h-64 w-full" />
           </CardContent>
         </Card>
         <Card>
@@ -632,18 +696,10 @@ function InsightsSkeleton() {
             <Skeleton className="h-6 w-40" />
           </CardHeader>
           <CardContent>
-            <Skeleton className="h-80 w-full" />
+            <Skeleton className="h-64 w-full" />
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-56" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-80 w-full" />
-        </CardContent>
-      </Card>
     </div>
   )
 }
